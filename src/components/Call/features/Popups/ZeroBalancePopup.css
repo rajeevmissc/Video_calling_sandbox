@@ -1,0 +1,149 @@
+/* Zero Balance Popup Styles */
+.zero-balance-popup {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: popupSlideIn 0.3s ease-out;
+  text-align: center;
+}
+
+.zero-balance-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.zero-balance-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #d32f2f;
+  margin: 0 0 16px 0;
+  line-height: 1.3;
+}
+
+.zero-balance-message {
+  font-size: 16px;
+  color: #424242;
+  margin: 0 0 20px 0;
+  line-height: 1.6;
+}
+
+.zero-balance-info {
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+  padding: 16px;
+  margin: 0 0 24px 0;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.zero-balance-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #e65100;
+  font-weight: 500;
+}
+
+.zero-balance-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.zero-balance-button {
+  flex: 1;
+  min-width: 140px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.zero-balance-button-primary {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.zero-balance-button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+}
+
+.zero-balance-button-primary:active {
+  transform: translateY(0);
+}
+
+.zero-balance-button-secondary {
+  background: #e0e0e0;
+  color: #424242;
+}
+
+.zero-balance-button-secondary:hover {
+  background: #d5d5d5;
+}
+
+.zero-balance-button span {
+  font-size: 18px;
+}
+
+@keyframes popupSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+  .zero-balance-popup {
+    padding: 24px;
+    max-width: 90%;
+  }
+
+  .zero-balance-icon {
+    font-size: 48px;
+  }
+
+  .zero-balance-title {
+    font-size: 20px;
+  }
+
+  .zero-balance-message {
+    font-size: 14px;
+  }
+
+  .zero-balance-buttons {
+    flex-direction: column;
+  }
+
+  .zero-balance-button {
+    min-width: 100%;
+  }
+}

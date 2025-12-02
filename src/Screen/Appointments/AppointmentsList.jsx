@@ -204,7 +204,7 @@ const AppointmentsList = () => {
 
       // Fetch verification details
       const verificationRes = await axios.get(
-        `https://socket-server-d9ts.onrender.com/api/verification/${bookingId}`,
+        `https://socket-server-sandbox.onrender.com/api/verification/${bookingId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

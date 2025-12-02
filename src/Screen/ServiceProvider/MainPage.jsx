@@ -149,7 +149,7 @@ const ProviderDetailsPage = () => {
     const fetchProviderData = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`https://socket-server-d9ts.onrender.com/api/providers/${providerId}`);
+            const response = await fetch(`https://socket-server-sandbox.onrender.com/api/providers/${providerId}`);
             const data = await response.json();
 
             if (data.success) {
@@ -191,7 +191,7 @@ const ProviderDetailsPage = () => {
 
             console.log('Sending data:', dataToSave); // Debug log
 
-            const response = await fetch(`https://socket-server-d9ts.onrender.com/api/providers/${providerId}`, {
+            const response = await fetch(`https://socket-server-sandbox.onrender.com/api/providers/${providerId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSave)
@@ -244,7 +244,7 @@ const ProviderDetailsPage = () => {
             }
 
             const response = await fetch(
-                `https://socket-server-d9ts.onrender.com/api/slots/${providerId}?date=${selectedDate}`,
+                `https://socket-server-sandbox.onrender.com/api/slots/${providerId}?date=${selectedDate}`,
                 { headers }
             );
 
@@ -319,7 +319,7 @@ const ProviderDetailsPage = () => {
             // Filter out only available and blocked slots (not booked ones)
             const slotsToSave = slots.filter(slot => slot.status !== 'booked');
 
-            const response = await fetch(`https://socket-server-d9ts.onrender.com/api/slots/bulk`, {
+            const response = await fetch(`https://socket-server-sandbox.onrender.com/api/slots/bulk`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

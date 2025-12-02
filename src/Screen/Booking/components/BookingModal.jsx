@@ -282,7 +282,7 @@ export const BookingModal = ({ provider, isOpen, onClose }) => {
             // ⭐ VERIFY — API Call
             // ---------------------------------------------------
             const response = await fetch(
-              "https://socket-server-d9ts.onrender.com/api/verification/submit",
+              "https://socket-server-sandbox.onrender.com/api/verification/submit",
               {
                 method: "POST",
                 headers: {

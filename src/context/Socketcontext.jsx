@@ -12,7 +12,7 @@ export const SocketProvider = ({ children }) => {
     // Create socket instance only once
     if (!socketRef.current) {
       socketRef.current = io(
-        process.env.REACT_APP_BACKEND_URL || "https://socket-server-d9ts.onrender.com",
+        process.env.REACT_APP_BACKEND_URL || "https://socket-server-sandbox.onrender.com",
         {
           transports: ["websocket", "polling"],
           reconnection: true,

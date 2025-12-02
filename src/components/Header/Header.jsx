@@ -84,7 +84,7 @@ const Header = () => {
         await axios.post(
           `${
             process.env.REACT_APP_BACKEND_URL ||
-            "https://socket-server-d9ts.onrender.com"
+            "https://socket-server-sandbox.onrender.com"
           }/api/providers/update-status`,
           { providerId, status: newStatus }
         );

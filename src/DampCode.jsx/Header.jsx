@@ -100,7 +100,7 @@ const Header = () => {
     try {
       // ✅ Update backend via REST API
       await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL || "https://socket-server-d9ts.onrender.com"}/api/providers/update-status`,
+        `${process.env.REACT_APP_BACKEND_URL || "https://socket-server-sandbox.onrender.com"}/api/providers/update-status`,
         {
           providerId,
           status: newStatus,

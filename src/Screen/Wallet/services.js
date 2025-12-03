@@ -2,14 +2,8 @@ import { Phone } from 'lucide-react';
 import { API_BASE_URL, CASHFREE_MODE } from './constants';
 
 
-const userData = useMemo(() => {
-  try {
-    return JSON.parse(localStorage.getItem('userData') || '{}');
-  } catch (error) {
-    console.error('Error parsing userData:', error);
-    return {};
-  }
-}, []);
+const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+
 
 // ==================== CASHFREE MANAGER ====================
 class CashfreeManager {

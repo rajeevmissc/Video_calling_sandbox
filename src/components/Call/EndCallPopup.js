@@ -6,7 +6,8 @@ const EndCallPopup = ({
   callDuration,
   totalCharged,
   callType,
-  userRole
+  userRole,
+  onClose
 }) => {
 
   const navigate = useNavigate();
@@ -31,6 +32,14 @@ const EndCallPopup = ({
   <div className="bg-slate-800 rounded-xl border border-slate-700 
       p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md shadow-2xl 
       animate-slideDown relative">
+
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-white transition-colors p-1 hover:bg-slate-700 rounded-lg"
+          aria-label="Close"
+        >
+          <FaTimes className="text-base sm:text-lg" />
+        </button> 
     {/* Content */}
     <div className="text-center mb-4 sm:mb-6">
 

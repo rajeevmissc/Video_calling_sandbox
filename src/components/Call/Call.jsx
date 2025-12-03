@@ -568,7 +568,7 @@ import DeclinedPopup from './features/Popups/DeclinedPopup';
 import ChatModeHeader from './features/ChatMode/ChatModeHeader';
 import ChatModeOverlay from './features/ChatMode/ChatModeOverlay';
 import CallModeLayout from './features/CallMode/CallModeLayout';
-
+import RefreshProtection from './RefreshProtection';
 // Utilities
 import { CALL_STATUS, CALL_TYPE, TIMING, SYSTEM_MESSAGES } from './utils/constants';
 import {
@@ -690,37 +690,7 @@ function Call() {
     }
   }, [agora.remoteUsers.length]);
 
-  // In Call.jsx
-useEffect(() => {
-  // Initialize timer on mount
-  const storageKey = `call_start_${channelName}`;
-  const existingStartTime = localStorage.getItem(storageKey);
-
-  if (existingStartTime && agora.remoteUsers.length > 0) {
-    // Call was in progress - sync timer
-    const startTime = parseInt(existingStartTime, 10);
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    
-    console.log(`🔄 Page refreshed - syncing timer to ${elapsed}s`);
-    
-    // If your agora hook has a setter for duration
-    if (agora.setCallDuration) {
-      agora.setCallDuration(elapsed);
-    }
-    
-    // Restart timer from correct position
-    if (agora.startSyncedTimer) {
-      agora.startSyncedTimer();
-    }
-  }
-
-  // Cleanup on unmount
-  return () => {
-    if (!agora.remoteUsers.length) {
-      localStorage.removeItem(storageKey);
-    }
-  };
-}, [channelName]);
+  
 
   // Auto disable video for chat mode
   useEffect(() => {
@@ -995,8 +965,8 @@ useEffect(() => {
 
   const handleClosePopup = useCallback(() => {
     setShowEndCallPopup(false);
-    navigate(getNavigationPathByRole(userRole));
-  }, [navigate, userRole]);
+    navigate("/home");
+  }, [navigate]);
 
   const handleCallSameProvider = useCallback(() => {
     setShowDeclinedPopup(false);
@@ -1017,6 +987,12 @@ useEffect(() => {
         connectionState={agora.connectionState}
         isChatMode={isChatMode}
       />
+
+    <RefreshProtection 
+      isActive={callConnected && !callEnded} 
+      channelName={channelName}
+      callDuration={agora.callDuration}
+    />
 
       <SwitchingOverlay
         isSwitching={isSwitchingCallType}

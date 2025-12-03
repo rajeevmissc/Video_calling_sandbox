@@ -101,12 +101,8 @@ export const serviceCategories = {
 
 // data/providersData.js - API-based Provider Database
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
-
-// In-memory cache for providers (for backward compatibility)
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 let providersCache = [];
-
-// Fallback data in case API is down
 const fallbackProviders = [
   {
     id: "provider-001",

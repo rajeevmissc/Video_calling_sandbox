@@ -690,6 +690,38 @@ function Call() {
     }
   }, [agora.remoteUsers.length]);
 
+  // In Call.jsx
+useEffect(() => {
+  // Initialize timer on mount
+  const storageKey = `call_start_${channelName}`;
+  const existingStartTime = localStorage.getItem(storageKey);
+
+  if (existingStartTime && agora.remoteUsers.length > 0) {
+    // Call was in progress - sync timer
+    const startTime = parseInt(existingStartTime, 10);
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    
+    console.log(`🔄 Page refreshed - syncing timer to ${elapsed}s`);
+    
+    // If your agora hook has a setter for duration
+    if (agora.setCallDuration) {
+      agora.setCallDuration(elapsed);
+    }
+    
+    // Restart timer from correct position
+    if (agora.startSyncedTimer) {
+      agora.startSyncedTimer();
+    }
+  }
+
+  // Cleanup on unmount
+  return () => {
+    if (!agora.remoteUsers.length) {
+      localStorage.removeItem(storageKey);
+    }
+  };
+}, [channelName]);
+
   // Auto disable video for chat mode
   useEffect(() => {
     if (isChatMode && agora.localVideoTrack) {

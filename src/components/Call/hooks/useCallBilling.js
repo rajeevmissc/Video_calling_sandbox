@@ -335,7 +335,7 @@ export const useCallBilling = (
 
   const getRequiredBuffer = useCallback(() => {
     const rate = getCallRate();
-    return rate * 2;
+    return rate * 3;
   }, [getCallRate]);
 
   const checkBalanceForCall = useCallback(async () => {

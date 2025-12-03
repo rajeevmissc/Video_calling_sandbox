@@ -464,6 +464,7 @@ useEffect(() => {
           setChatInput={agora.setChatInput}
           sendMessage={agora.sendMessage}
           remoteUsers={agora.remoteUsers}
+          onClose={() => !isChatMode && ui.setShowChat(false)}
           currentUserId={userRole === "user" ? "local" : "remote"}
           isWaitingForProvider={currentIsWaitingForProviderInChat}
           isRemoteTyping={isRemoteTyping}

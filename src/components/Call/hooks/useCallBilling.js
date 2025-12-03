@@ -296,6 +296,7 @@ export const useCallBilling = (
 
   const hasTriggeredCallEndRef = useRef(false);
   const hasShownLowBalanceWarningRef = useRef(false);
+  const lastCheckedSecondRef = useRef(0); // ✅ NEW: Prevent duplicate checks
 
   const isCallDataReady = !!(
     callData && 
@@ -320,11 +321,10 @@ export const useCallBilling = (
     
     if (rateForCallType && !isNaN(Number(rateForCallType)) && Number(rateForCallType) > 0) {
       const rate = Number(rateForCallType);
-      console.log(`💰 Call rate: ₹${rate}/min for ${callType}`);
       return rate;
     }
     
-    console.error(`❌ No valid rate found for ${callType}. Provider rates:`, callData.providerRate);
+    console.error(`❌ No valid rate found for ${callType}`);
     return 0;
   }, [isCallDataReady, callData?.providerRate, callType]);
 
@@ -353,20 +353,6 @@ export const useCallBilling = (
       billingSkipped: false
     };
   }, [billingState.isBillingApplicable, getRequiredBuffer, wallet.balance, isCallDataReady]);
-
-  const hasBalanceForNextMinute = useCallback(() => {
-    if (!billingState.isBillingApplicable || !isCallDataReady) {
-      return true;
-    }
-
-    const rate = getCallRate();
-    if (rate === 0) return true;
-    
-    const hasEnough = wallet.balance >= rate;
-    console.log(`💰 Balance check: ₹${wallet.balance.toFixed(2)} >= ₹${rate.toFixed(2)} = ${hasEnough}`);
-    
-    return hasEnough;
-  }, [billingState.isBillingApplicable, isCallDataReady, getCallRate, wallet.balance]);
 
   const chargeForMinutes = useCallback(
     async (minutesToBill, label = '') => {
@@ -506,29 +492,43 @@ export const useCallBilling = (
     onInsufficientBalance
   ]);
 
-  // Check balance at 50 seconds
+  // ✅ IMPROVED: Balance check at 50 seconds with better enforcement
   useEffect(() => {
     if (
       !isCallActive ||
       !billingState.isBillingApplicable ||
       !isCallDataReady ||
       !billingState.hasInitialCharge ||
-      billingState.callEndedDueToBalance
+      billingState.callEndedDueToBalance ||
+      hasTriggeredCallEndRef.current
     ) {
       return;
     }
 
     const currentMinute = Math.floor(callDuration / 60);
-    const secondsIntoMinute = callDuration % 60;
+    const secondsIntoMinute = Math.floor(callDuration % 60);
+    const currentSecond = Math.floor(callDuration);
     
-    if (secondsIntoMinute >= 50 && currentMinute === billingState.lastBilledMinute) {
-      console.log(`⏰ Checking balance at ${currentMinute}:${Math.floor(secondsIntoMinute)}s`);
+    // ✅ Check between 50-52 seconds, only once per minute
+    if (secondsIntoMinute >= 50 && secondsIntoMinute <= 52 && currentMinute === billingState.lastBilledMinute) {
+      // ✅ Prevent duplicate checks in the same second
+      if (lastCheckedSecondRef.current === currentSecond) {
+        return;
+      }
+      lastCheckedSecondRef.current = currentSecond;
+
+      const rate = getCallRate();
+      const hasBalance = wallet.balance >= rate;
       
-      const hasBalance = hasBalanceForNextMinute();
+      console.log(`⏰ [${currentMinute}:${secondsIntoMinute}] Balance check for minute ${currentMinute + 1}: ₹${wallet.balance} >= ₹${rate} = ${hasBalance}`);
       
-      if (!hasBalance && !hasTriggeredCallEndRef.current) {
-        console.warn(`⚠️ Insufficient balance for minute ${currentMinute + 1} - ending call`);
+      if (!hasBalance) {
+        console.error(`🚫 INSUFFICIENT BALANCE DETECTED - ENDING CALL NOW`);
+        console.error(`   Current balance: ₹${wallet.balance}`);
+        console.error(`   Required: ₹${rate}`);
+        console.error(`   Total charged so far: ₹${billingState.totalCharged}`);
         
+        // ✅ Set flag IMMEDIATELY
         hasTriggeredCallEndRef.current = true;
         
         setBillingState(prev => ({
@@ -537,14 +537,17 @@ export const useCallBilling = (
           lowBalanceWarning: false
         }));
 
+        // ✅ Call immediately, no timeout
         if (typeof onInsufficientBalance === 'function') {
-          const rate = getCallRate();
+          console.log('📞 Calling onInsufficientBalance...');
           onInsufficientBalance({
             reason: 'insufficient_balance',
             currentBalance: wallet.balance || 0,
             requiredAmount: rate || 0,
             totalCharged: billingState.totalCharged || 0
           });
+        } else {
+          console.error('❌ onInsufficientBalance is not a function!');
         }
       }
     }
@@ -557,13 +560,12 @@ export const useCallBilling = (
     billingState.callEndedDueToBalance,
     billingState.totalCharged,
     isCallDataReady,
-    hasBalanceForNextMinute,
     getCallRate,
     wallet.balance,
     onInsufficientBalance
   ]);
 
-  // Charge for next minute
+  // ✅ IMPROVED: Charge for next minute with pre-check
   const chargeForNextMinute = useCallback(async () => {
     if (
       !isCallActive ||
@@ -572,7 +574,8 @@ export const useCallBilling = (
       wallet.loading ||
       billingState.isCharging ||
       billingState.callEndedDueToBalance ||
-      !billingState.hasInitialCharge
+      !billingState.hasInitialCharge ||
+      hasTriggeredCallEndRef.current
     ) {
       return;
     }
@@ -581,7 +584,33 @@ export const useCallBilling = (
     const nextMinute = billingState.lastBilledMinute + 1;
 
     if (currentMinute >= nextMinute) {
-      console.log(`💰 Minute ${nextMinute} started - charging now (prepaid)`);
+      const rate = getCallRate();
+      
+      console.log(`💰 [${currentMinute}:00] Attempting to charge for minute ${nextMinute}`);
+      
+      // ✅ PRE-CHECK: Don't even try to charge if balance insufficient
+      if (wallet.balance < rate) {
+        console.error(`❌ Cannot charge minute ${nextMinute} - Balance: ₹${wallet.balance} < Rate: ₹${rate}`);
+        
+        if (!hasTriggeredCallEndRef.current) {
+          hasTriggeredCallEndRef.current = true;
+          
+          setBillingState(prev => ({
+            ...prev,
+            callEndedDueToBalance: true
+          }));
+
+          if (typeof onInsufficientBalance === 'function') {
+            onInsufficientBalance({
+              reason: 'insufficient_balance',
+              currentBalance: wallet.balance || 0,
+              requiredAmount: rate || 0,
+              totalCharged: billingState.totalCharged || 0
+            });
+          }
+        }
+        return;
+      }
 
       const result = await chargeForMinutes(1, `Minute ${nextMinute}`);
       
@@ -590,25 +619,26 @@ export const useCallBilling = (
           ...prev, 
           lastBilledMinute: nextMinute 
         }));
-        console.log(`✅ Charged for minute ${nextMinute}`);
+        console.log(`✅ Charged for minute ${nextMinute} successfully`);
       } else if (result.reason === 'insufficient_balance') {
-        console.error('❌ Cannot charge for minute - ending call');
+        console.error('❌ Charge failed - insufficient balance');
         
-        hasTriggeredCallEndRef.current = true;
-        
-        setBillingState(prev => ({
-          ...prev,
-          callEndedDueToBalance: true
-        }));
+        if (!hasTriggeredCallEndRef.current) {
+          hasTriggeredCallEndRef.current = true;
+          
+          setBillingState(prev => ({
+            ...prev,
+            callEndedDueToBalance: true
+          }));
 
-        if (typeof onInsufficientBalance === 'function') {
-          const rate = getCallRate();
-          onInsufficientBalance({
-            reason: 'insufficient_balance',
-            currentBalance: wallet.balance || 0,
-            requiredAmount: rate || 0,
-            totalCharged: billingState.totalCharged || 0
-          });
+          if (typeof onInsufficientBalance === 'function') {
+            onInsufficientBalance({
+              reason: 'insufficient_balance',
+              currentBalance: wallet.balance || 0,
+              requiredAmount: rate || 0,
+              totalCharged: billingState.totalCharged || 0
+            });
+          }
         }
       }
     }
@@ -690,6 +720,7 @@ export const useCallBilling = (
       }));
       hasTriggeredCallEndRef.current = false;
       hasShownLowBalanceWarningRef.current = false;
+      lastCheckedSecondRef.current = 0;
     }
   }, [isCallActive]);
 

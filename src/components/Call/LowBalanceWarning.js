@@ -11,7 +11,7 @@ const LowBalanceWarning = ({
 }) => {
   if (!isOpen) return null;
 
-  const formatAmount = (paise) => `₹${(paise / 100).toFixed(2)}`;
+  const formatAmount = (paise) => `₹${(paise).toFixed(2)}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 md:p-6 z-50">

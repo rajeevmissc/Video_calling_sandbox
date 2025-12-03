@@ -264,6 +264,9 @@
 
 
 
+
+
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../../../Screen/Booking/hooks/useWallet';
@@ -367,8 +370,9 @@ export const useCallBilling = (
 
   const chargeForMinutes = useCallback(
     async (minutesToBill, label = '') => {
-      if (!isCallDataReady || !billingState.isBillingApplicable || wallet.loading || billingState.isCharging)
+      if (!isCallDataReady || !billingState.isBillingApplicable || wallet.loading || billingState.isCharging) {
         return { success: false, reason: 'not_ready' };
+      }
 
       const rate = getCallRate();
       if (rate === 0) {
@@ -389,9 +393,7 @@ export const useCallBilling = (
           }
 
           const serviceType = getServiceType();
-          const description = `${label} ${callType} call with ${
-            callData?.providerName || 'Provider'
-          } - ${minutesToBill} min @ ₹${rate}/min`;
+          const description = `${label} ${callType} call with ${callData?.providerName || 'Provider'} - ${minutesToBill} min @ ₹${rate}/min`;
 
           const deductionResult = await wallet.deduct(
             amountToCharge,
@@ -429,16 +431,17 @@ export const useCallBilling = (
       billingState.isCharging,
       wallet.loading,
       wallet.balance,
+      wallet.deduct,
       callData?.providerName,
       callData?.providerId,
       getCallRate,
       getServiceType,
       channelName,
-      callType,
-      wallet
+      callType
     ]
   );
 
+  // Initialize billing
   useEffect(() => {
     if (!isCallDataReady) return;
     const applicable = shouldApplyBilling();
@@ -449,9 +452,11 @@ export const useCallBilling = (
     }));
   }, [shouldApplyBilling, callData?.userRole, isCallDataReady]);
 
+  // Initial charge
   useEffect(() => {
-    if (!isCallDataReady || !isCallActive || !billingState.isBillingApplicable || billingState.hasInitialCharge)
+    if (!isCallDataReady || !isCallActive || !billingState.isBillingApplicable || billingState.hasInitialCharge) {
       return;
+    }
     
     const rate = getCallRate();
     if (rate === 0) {
@@ -490,8 +495,18 @@ export const useCallBilling = (
         }
       }
     });
-  }, [isCallActive, billingState.isBillingApplicable, billingState.hasInitialCharge, chargeForMinutes, isCallDataReady, getCallRate, wallet.balance, onInsufficientBalance]);
+  }, [
+    isCallActive, 
+    billingState.isBillingApplicable, 
+    billingState.hasInitialCharge, 
+    chargeForMinutes, 
+    isCallDataReady, 
+    getCallRate, 
+    wallet.balance, 
+    onInsufficientBalance
+  ]);
 
+  // Check balance at 50 seconds
   useEffect(() => {
     if (
       !isCallActive ||
@@ -507,7 +522,7 @@ export const useCallBilling = (
     const secondsIntoMinute = callDuration % 60;
     
     if (secondsIntoMinute >= 50 && currentMinute === billingState.lastBilledMinute) {
-      console.log(`⏰ Checking balance at ${currentMinute}:${Math.floor(secondsIntoMinute)}s for next minute`);
+      console.log(`⏰ Checking balance at ${currentMinute}:${Math.floor(secondsIntoMinute)}s`);
       
       const hasBalance = hasBalanceForNextMinute();
       
@@ -548,6 +563,7 @@ export const useCallBilling = (
     onInsufficientBalance
   ]);
 
+  // Charge for next minute
   const chargeForNextMinute = useCallback(async () => {
     if (
       !isCallActive ||
@@ -557,7 +573,9 @@ export const useCallBilling = (
       billingState.isCharging ||
       billingState.callEndedDueToBalance ||
       !billingState.hasInitialCharge
-    ) return;
+    ) {
+      return;
+    }
 
     const currentMinute = Math.floor(callDuration / 60);
     const nextMinute = billingState.lastBilledMinute + 1;
@@ -574,7 +592,7 @@ export const useCallBilling = (
         }));
         console.log(`✅ Charged for minute ${nextMinute}`);
       } else if (result.reason === 'insufficient_balance') {
-        console.error('❌ Unexpected: Cannot charge for minute - ending call');
+        console.error('❌ Cannot charge for minute - ending call');
         
         hasTriggeredCallEndRef.current = true;
         
@@ -616,6 +634,7 @@ export const useCallBilling = (
     chargeForNextMinute();
   }, [callDuration, isCallActive, billingState.isBillingApplicable, chargeForNextMinute, isCallDataReady]);
 
+  // Monitor balance for warnings
   const monitorBalance = useCallback(async () => {
     if (
       !isCallDataReady || 
@@ -623,7 +642,9 @@ export const useCallBilling = (
       !billingState.isBillingApplicable ||
       billingState.callEndedDueToBalance ||
       hasShownLowBalanceWarningRef.current
-    ) return;
+    ) {
+      return;
+    }
 
     const rate = getCallRate();
     if (rate === 0) return;
@@ -631,7 +652,7 @@ export const useCallBilling = (
     const remainingMinutes = Math.floor(wallet.balance / rate);
     
     if (remainingMinutes < 2 && remainingMinutes >= 1) {
-      console.warn(`⚠️ Low balance warning: Only ${remainingMinutes} minute(s) remaining`);
+      console.warn(`⚠️ Low balance: ${remainingMinutes} minute(s) remaining`);
       hasShownLowBalanceWarningRef.current = true;
       
       setBillingState(prev => ({
@@ -655,6 +676,7 @@ export const useCallBilling = (
     return () => clearInterval(interval);
   }, [isCallActive, billingState.isBillingApplicable, monitorBalance, isCallDataReady]);
 
+  // Reset on call end
   useEffect(() => {
     if (!isCallActive) {
       setBillingState(prev => ({
@@ -698,28 +720,3 @@ export const useCallBilling = (
     isCallDataReady
   };
 };
-```
-
----
-
-## **How This Works (Like Real Phone Calls):**
-
-### **Example: Balance ₹60, Rate ₹10/min**
-```
-// 0:00 - Call starts
-// 0:01 - Charge ₹10 (prepaid for minute 1) → Balance: ₹50
-// 0:50 - Check balance for minute 2: ₹50 >= ₹10 ✅
-// 1:00 - Minute 2 starts → Charge ₹10 → Balance: ₹40
-// 1:50 - Check balance for minute 3: ₹40 >= ₹10 ✅
-// 2:00 - Minute 3 starts → Charge ₹10 → Balance: ₹30
-// 2:50 - Check balance for minute 4: ₹30 >= ₹10 ✅
-// 3:00 - Minute 4 starts → Charge ₹10 → Balance: ₹20
-// 3:50 - Check balance for minute 5: ₹20 >= ₹10 ✅
-// 4:00 - Minute 5 starts → Charge ₹10 → Balance: ₹10
-// 4:50 - Check balance for minute 6: ₹10 >= ₹10 ✅
-// 5:00 - Minute 6 starts → Charge ₹10 → Balance: ₹0
-// 5:50 - Check balance for minute 7: ₹0 < ₹10 ❌
-// 5:55 - CALL ENDS (can't afford minute 7)
-
-
-

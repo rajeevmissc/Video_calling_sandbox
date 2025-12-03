@@ -7,10 +7,11 @@ export const useAudioManager = () => {
   const playbackAttemptsRef = useRef(new Map());
 
   // Stable audio paths
-  const audioUrls = useMemo(
+   const audioUrls = useMemo(
     () => ({
-      ringtone: "/sounds/ringtone.mp3",
-      chat: "/sounds/chat.mp3"
+      ringtone:
+        'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg',
+      chat: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg',
     }),
     []
   );

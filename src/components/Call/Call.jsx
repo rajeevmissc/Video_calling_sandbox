@@ -410,7 +410,7 @@ useEffect(() => {
   }, [navigate]);
 
   const containerClass = isChatMode ? "call-container call-mode-chat" : "call-container";
-  const displayInfo = getUserDisplayInfo(callData?.userRole, callData.providerData?.providerName);
+  const displayInfo = getUserDisplayInfo(callData?.userRole, callData.providerData?.data.personalInfo.fullName);
   console.log(callData.providerData)
   return (
     <div className={containerClass}>

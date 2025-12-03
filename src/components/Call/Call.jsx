@@ -860,7 +860,7 @@ function Call() {
     alert(
       `Call ended: Insufficient balance\n\n` +
       `You need ₹${requiredAmount} for the next minute.\n` +
-      `Current balance: ₹${currentBalance}\n` +
+      `Your wallet balece is less then ₹${requiredAmount}\n` +
       `Total charged: ₹${totalCharged}\n\n` +
       `Please recharge your wallet to continue.`
     );

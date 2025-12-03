@@ -296,7 +296,7 @@ const ChatPanel = ({
 
             <div className="flex flex-col">
               <h3 className="font-semibold text-white text-sm sm:text-base">
-                {userRole === "provider" ? "User" : "Happiness Care Executive"}
+                {userRole === "provider" ? "User" : providerName}
               </h3>
               <div className="flex items-center space-x-1.5">
                 <span

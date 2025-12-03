@@ -3,28 +3,43 @@ import { useRef, useCallback, useEffect, useMemo } from "react";
 export const useAudioManager = () => {
   const audioRef = useRef(null);
   const isInitializedRef = useRef(false);
-  const playbackAttemptsRef = useRef(new Map());
   const isUnlockedRef = useRef(false);
+  const playbackAttemptsRef = useRef(new Map());
 
-  // Stable audio URLs
+  // Stable audio paths
   const audioUrls = useMemo(
     () => ({
-      ringtone: "/sounds/ringtone.mp3", // ⚡ use local stable sound
-      chat: "/sounds/ringtone.mp3",
+      ringtone: "/sounds/ringtone.mp3",
+      chat: "/sounds/chat.mp3"
     }),
     []
   );
 
-  // 🔓 Unlock audio on first user gesture (Chrome/Safari autoplay fix)
+  // ---------------------------------------
+  // 🔓 REAL AUDIO UNLOCK (Chrome/iOS fix)
+  // ---------------------------------------
   useEffect(() => {
     const unlock = () => {
-      if (isUnlockedRef.current) return;
+      if (!audioRef.current || isUnlockedRef.current) return;
 
-      const temp = new Audio();
-      temp.play().catch(() => {});
-      isUnlockedRef.current = true;
+      try {
+        Object.values(audioRef.current).forEach((a) => {
+          a.muted = true;
 
-      console.log("🔓 Audio unlocked by user gesture");
+          a.play()
+            .then(() => {
+              a.pause();
+              a.currentTime = 0;
+              a.muted = false;
+            })
+            .catch(() => {});
+        });
+
+        isUnlockedRef.current = true;
+        console.log("🔓 Audio fully unlocked");
+      } catch (e) {
+        console.log("Unlock failed:", e);
+      }
 
       window.removeEventListener("click", unlock);
       window.removeEventListener("touchstart", unlock);
@@ -39,114 +54,88 @@ export const useAudioManager = () => {
     };
   }, []);
 
-  // Initialize audio
+  // ---------------------------------------
+  // 🎧 Initialize all audio elements
+  // ---------------------------------------
   const initializeAudio = useCallback(() => {
-    if (isInitializedRef.current) {
-      console.warn("⚠️ Audio already initialized");
-      return;
-    }
+    if (isInitializedRef.current) return;
 
     try {
       const callAudio = new Audio();
       callAudio.preload = "auto";
       callAudio.loop = true;
-      callAudio.volume = 1.0;
+      callAudio.volume = 1;
+      callAudio.src = audioUrls.ringtone;
+      callAudio.load();
 
       const chatAudio = new Audio();
       chatAudio.preload = "auto";
       chatAudio.loop = false;
-      chatAudio.volume = 1.0;
+      chatAudio.volume = 1;
+      chatAudio.src = audioUrls.chat;
+      chatAudio.load();
 
       audioRef.current = { call: callAudio, chat: chatAudio };
       isInitializedRef.current = true;
 
       console.log("🎧 Audio initialized");
-
-      // ⚡ pre-decode trick (buffers the audio silently)
-      Object.values(audioRef.current).forEach(async (audio) => {
-        try {
-          audio.src = audioUrls.ringtone;
-          await audio.play();
-          audio.pause();
-          audio.currentTime = 0;
-        } catch {}
-      });
-    } catch (error) {
-      console.error("❌ Failed to initialize audio:", error);
+    } catch (err) {
+      console.error("❌ Audio init failed:", err);
     }
   }, [audioUrls]);
 
-  // Cleanup audio
-  const cleanupAudio = useCallback(() => {
-    if (!audioRef.current) return;
+  // Auto-initialize on mount
+  useEffect(() => {
+    initializeAudio();
+  }, [initializeAudio]);
 
-    try {
-      Object.values(audioRef.current).forEach((audio) => {
-        if (audio) {
-          audio.pause();
-          audio.src = "";
-          audio.load();
-        }
-      });
-
-      audioRef.current = null;
-      isInitializedRef.current = false;
-      playbackAttemptsRef.current.clear();
-
-      console.log("🧹 Audio fully cleaned");
-    } catch (e) {
-      console.error("❌ Cleanup error:", e);
-    }
-  }, []);
-
-  // Load source with retry
+  // ---------------------------------------
+  // 🎵 Load source with retry
+  // ---------------------------------------
   const loadAudioSource = useCallback(
-    async (audio, audioType) => {
+    async (audio, type) => {
       const maxRetries = 2;
-      const attempts = playbackAttemptsRef.current.get(audioType) || 0;
+      const attempts = playbackAttemptsRef.current.get(type) || 0;
 
       if (attempts >= maxRetries) {
-        console.error(`❌ Max retry attempts for ${audioType}`);
+        console.error(`❌ Max retries reached for ${type}`);
         return false;
       }
 
       try {
-        if (!audio.src || audio.error) {
-          audio.src =
-            audioUrls[audioType === "call" ? "ringtone" : "chat"];
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(
+            () => reject(new Error("Audio load timeout")),
+            3000
+          );
 
-          await new Promise((resolve, reject) => {
-            const timeout = setTimeout(
-              () => reject(new Error("Audio load timeout")),
-              3000
-            );
+          audio.oncanplaythrough = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
 
-            audio.oncanplaythrough = () => {
-              clearTimeout(timeout);
-              resolve();
-            };
+          audio.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error("Audio load error"));
+          };
 
-            audio.onerror = () => {
-              clearTimeout(timeout);
-              reject(new Error("Audio load failed"));
-            };
+          audio.load();
+        });
 
-            audio.load();
-          });
-        }
-
-        playbackAttemptsRef.current.set(audioType, 0);
+        playbackAttemptsRef.current.set(type, 0);
         return true;
       } catch (e) {
-        playbackAttemptsRef.current.set(audioType, attempts + 1);
-        console.warn(`Retry loading audio (${attempts + 1})`);
+        playbackAttemptsRef.current.set(type, attempts + 1);
+        console.warn(`Retry loading ${type} (${attempts + 1})`);
         return false;
       }
     },
-    [audioUrls]
+    []
   );
 
-  // Play sound
+  // ---------------------------------------
+  // ▶️ PLAY SOUND
+  // ---------------------------------------
   const playSound = useCallback(
     async (mode) => {
       if (!audioRef.current || !isInitializedRef.current) {
@@ -155,50 +144,55 @@ export const useAudioManager = () => {
       }
 
       if (!isUnlockedRef.current) {
-        console.warn("🔒 Audio blocked (no user interaction)");
+        console.warn("🔒 Audio blocked until user interacts");
         return false;
       }
 
       const type = mode === "chat" ? "chat" : "call";
       const audio = audioRef.current[type];
 
+      // Pause all other audio tracks
+      Object.values(audioRef.current).forEach((a) => {
+        if (a !== audio) {
+          a.pause();
+          a.currentTime = 0;
+        }
+      });
+
+      const loaded = await loadAudioSource(audio, type);
+      if (!loaded) return false;
+
       try {
-        Object.values(audioRef.current).forEach((a) => {
-          if (a !== audio) {
-            a.pause();
-            a.currentTime = 0;
-          }
-        });
-
-        const loaded = await loadAudioSource(audio, type);
-        if (!loaded) return false;
-
         audio.currentTime = 0;
         await audio.play();
 
         console.log(`🔊 Playing ${type}`);
         return true;
       } catch (e) {
-        console.error(`❌ Playback error:`, e);
+        console.error(`❌ Playback error (${type})`, e);
         return false;
       }
     },
     [loadAudioSource]
   );
 
+  // ---------------------------------------
+  // ⏹ STOP SOUND
+  // ---------------------------------------
   const stopSound = useCallback(() => {
     if (!audioRef.current) return;
 
     Object.values(audioRef.current).forEach((a) => {
-      if (a) {
-        a.pause();
-        a.currentTime = 0;
-      }
+      a.pause();
+      a.currentTime = 0;
     });
 
     console.log("🔇 All audio stopped");
   }, []);
 
+  // ---------------------------------------
+  // ⏸ PAUSE SPECIFIC
+  // ---------------------------------------
   const pauseSound = useCallback((mode) => {
     if (!audioRef.current) return;
 
@@ -211,11 +205,30 @@ export const useAudioManager = () => {
     } catch {}
   }, []);
 
+  // ---------------------------------------
+  // 🧹 CLEANUP
+  // ---------------------------------------
+  const cleanupAudio = useCallback(() => {
+    if (!audioRef.current) return;
+
+    Object.values(audioRef.current).forEach((audio) => {
+      audio.pause();
+      audio.src = "";
+      audio.load();
+    });
+
+    audioRef.current = null;
+    isInitializedRef.current = false;
+    playbackAttemptsRef.current.clear();
+
+    console.log("🧹 Audio cleaned");
+  }, []);
+
   return {
     initializeAudio,
-    cleanupAudio,
     playSound,
     stopSound,
     pauseSound,
+    cleanupAudio
   };
 };

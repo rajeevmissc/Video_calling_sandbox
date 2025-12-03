@@ -330,6 +330,7 @@ import { useSocket } from '../../context/Socketcontext';
 import axios from 'axios';
 import Loader from '../Loading';
 import CallNotificationUI from './CallNotificationUI';
+import EnableCallAlertsPrompt from './EnableCallAlertsPrompt';
 import { useCallNotification } from './hooks/useCallNotification';
 import { useSimpleAudio } from './hooks/useSimpleAudio';
 import { useProviderById } from "../../hooks/useProviderById";
@@ -347,7 +348,7 @@ const ProviderCallAlert = ({ providerId }) => {
   const mountedRef = useRef(true);
   const dragStartY = useRef(0);
   const processingRef = useRef(false);
-
+  
   // Custom hooks
   const { currentCall, showCall, hideCall } = useCallNotification();
   const { play: playRingtone, stop: stopRingtone } = useSimpleAudio();
@@ -557,35 +558,54 @@ const ProviderCallAlert = ({ providerId }) => {
       
       const shown = showCall(callData);
       if (shown) {
-        // Try to play ringtone
-        const played = playRingtone();
-        console.log('🔊 Ringtone play result:', played);
+        // Check if audio was pre-unlocked
+        const audioUnlocked = window.audioUnlocked || sessionStorage.getItem('callAlertsEnabled') === 'true';
+        
+        if (!audioUnlocked) {
+          console.warn('⚠️ Audio not unlocked - showing notification only');
+          
+          // Show browser notification as primary alert
+          if (Notification.permission === 'granted') {
+            window.callNotification = new Notification('📞 INCOMING CALL', {
+              body: `${callData.callerName} is calling (${callData.mode})...\n\n⚠️ Click "Enable Call Alerts" banner to hear ringtone!`,
+              icon: '/logo192.png',
+              tag: 'incoming-call',
+              requireInteraction: true,
+              silent: false,
+              vibrate: [500, 200, 500, 200, 500, 200, 500]
+            });
+            
+            window.callNotification.onclick = () => {
+              window.callNotification.close();
+            };
+          } else {
+            // Request permission if not granted
+            Notification.requestPermission();
+          }
+          return; // Exit early - don't play ringtone yet
+        }
+        
+        // Audio is unlocked - play ringtone!
+        console.log('🔊 Playing ringtone...');
+        playRingtone().then(played => {
+          console.log('🔊 Ringtone play result:', played);
+        });
         
         // Vibration with device detection
         if ('vibrate' in navigator) {
           const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-          let vibratePattern;
+          const vibratePattern = isIOS ? 400 : [500, 300, 500, 300, 500];
           
-          if (isIOS) {
-            console.log('📱 iOS detected - using simple vibration');
-            vibratePattern = 400; // iOS: single duration
-          } else {
-            console.log('📳 Android/Other - using pattern vibration');
-            vibratePattern = [500, 300, 500, 300, 500]; // Android: pattern
-          }
-          
-          // Start vibration
           try {
             const vibrateResult = navigator.vibrate(vibratePattern);
             console.log('📳 Vibration started:', vibrateResult);
             
-            // Repeat vibration (adjusted for device)
+            // Repeat vibration
             window.callVibrateInterval = setInterval(() => {
               if ('vibrate' in navigator) {
                 navigator.vibrate(vibratePattern);
               }
-            }, isIOS ? 2000 : 1500); // iOS: slower repeat
-            
+            }, isIOS ? 2000 : 1500);
           } catch (vibrateError) {
             console.error('❌ Vibration error:', vibrateError);
           }
@@ -593,10 +613,10 @@ const ProviderCallAlert = ({ providerId }) => {
           console.warn('⚠️ Vibration API not supported');
         }
         
-        // Browser notification
+        // Browser notification (supplementary)
         if (Notification.permission === 'granted') {
           try {
-            window.callNotification = new Notification('Incoming Call 📞', {
+            window.callNotification = new Notification('📞 Incoming Call', {
               body: `${callData.callerName} is calling (${callData.mode})...`,
               icon: '/logo192.png',
               tag: 'incoming-call',
@@ -676,34 +696,6 @@ const ProviderCallAlert = ({ providerId }) => {
     }
   }, []);
 
-  // ✅ Test vibration on mount
-  useEffect(() => {
-    const testVibration = () => {
-      if ('vibrate' in navigator) {
-        console.log('🧪 Testing vibration...');
-        navigator.vibrate(200); // Quick test buzz
-        setTimeout(() => {
-          console.log('✅ Vibration test complete');
-        }, 300);
-      } else {
-        console.warn('⚠️ Vibration not supported on this device');
-      }
-    };
-
-    // Listen for first user interaction to test
-    const handleFirstInteraction = () => {
-      testVibration();
-    };
-
-    document.addEventListener('touchstart', handleFirstInteraction, { once: true, passive: true });
-    document.addEventListener('click', handleFirstInteraction, { once: true });
-
-    return () => {
-      document.removeEventListener('touchstart', handleFirstInteraction);
-      document.removeEventListener('click', handleFirstInteraction);
-    };
-  }, []);
-
   // 👉 Drag Handlers (swipe down to decline on mobile)
   const handleDragStart = useCallback((e) => {
     if (e.touches?.length > 0) {
@@ -734,23 +726,26 @@ const ProviderCallAlert = ({ providerId }) => {
     return <Loader />;
   }
 
-  // No call - hide UI completely
-  if (!currentCall) {
-    return null;
-  }
-
-  // Show call notification UI
+  // Render component
   return (
-    <CallNotificationUI
-      activeCall={currentCall}
-      dragState={dragState}
-      isProcessing={isProcessing}
-      onAccept={handleAcceptCall}
-      onDecline={handleDeclineCall}
-      onDragStart={handleDragStart}
-      onDragMove={handleDragMove}
-      onDragEnd={handleDragEnd}
-    />
+    <>
+      {/* Enable Call Alerts Banner */}
+      <EnableCallAlertsPrompt />
+
+      {/* Call Notification UI */}
+      {currentCall && (
+        <CallNotificationUI
+          activeCall={currentCall}
+          dragState={dragState}
+          isProcessing={isProcessing}
+          onAccept={handleAcceptCall}
+          onDecline={handleDeclineCall}
+          onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
+          onDragEnd={handleDragEnd}
+        />
+      )}
+    </>
   );
 };
 

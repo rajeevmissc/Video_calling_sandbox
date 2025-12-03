@@ -615,6 +615,238 @@
 
 
 
+import { memo, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Star,
+  Phone,
+  Video,
+  MapPin,
+  CheckCircle,
+  MessageCircle,
+  Bookmark
+} from "lucide-react";
+
+import BannerImage from "../../Logos/bannerImage.png";
+import { usePresence } from "../../context/UserStatusContext";
+
+
+// ======================== CONSTANTS ========================
+
+const STATUS_COLORS = {
+  online: "bg-green-500",
+  recently_active: "bg-orange-400",
+  busy: "bg-red-500",
+  offline: "bg-gray-400"
+};
+
+const MODE_CONFIGS = {
+  call: {
+    buttonClass: "bg-[#1A1A1A] hover:bg-green-700",
+    activeText: "Start Call",
+    unavailableText: "Call Unavailable"
+  },
+  video: {
+    buttonClass: "bg-[#1A1A1A] hover:bg-green-700",
+    activeText: "Start Video Call",
+    unavailableText: "Video Unavailable"
+  },
+  chat: {
+    buttonClass: "bg-[#1A1A1A] hover:bg-green-700",
+    activeText: "Start Chat",
+    unavailableText: "Chat Unavailable"
+  },
+  visit: {
+    buttonClass: "bg-[#1A1A1A] hover:bg-green-700",
+    activeText: "View & Book",
+    unavailableText: "Currently Busy"
+  }
+};
+
+
+const PRICE_STYLES = {
+  call: "bg-[#E5F0FF]",
+  video: "bg-[#FEDDED]",
+  chat: "bg-[#FFF6CC]",
+  visit: "bg-[#FFE3CC]"
+};
+
+
+// ======================== SUB COMPONENTS ========================
+const ProviderImage = memo(({ provider }) => {
+  const initials = `${provider?.personalInfo?.firstName?.[0] || ""}${provider?.personalInfo?.lastName?.[0] || ""
+    }`.toUpperCase();
+
+  return provider?.personalInfo?.profileImage ? (
+    <img
+      src={provider.personalInfo.profileImage}
+      alt="Profile"
+      className="h-16 w-16 rounded-full object-cover"
+    />
+  ) : (
+    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold">
+      {initials}
+    </div>
+  );
+});
+
+const StatusBadge = memo(({ status, statusColor }) => (
+  <div className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-black/40 text-white">
+    <span className={`w-2 h-2 rounded-full ${statusColor}`} />
+    <span className="capitalize">{status}</span>
+  </div>
+));
+
+const VerificationBadge = memo(({ verified }) =>
+  verified ? (
+    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+      <CheckCircle className="w-3.5 h-3.5" />
+      Verified
+    </span>
+  ) : null
+);
+
+const PriceItem = memo(({ icon: Icon, price, variant }) => {
+  if (!price || Number(price) === 0) return null;
+
+  return (
+    <div className={`flex-1 flex flex-col items-center px-2 py-2 rounded-xl ${PRICE_STYLES[variant]}`}>
+      <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center">
+        <Icon className="w-4 h-4" />
+      </div>
+      <span className="text-xs font-medium">₹{price}</span>
+    </div>
+  );
+});
+
+
+// ======================== MAIN CARD ========================
+const ProviderCard = ({ provider, mode = "visit" }) => {
+  const navigate = useNavigate();
+  const { presenceMap } = usePresence();
+
+  // 🔥 Merge live presence with API
+  const livePresence = presenceMap?.[provider?._id] || provider?.presence || {};
+  const isOnline = livePresence?.isOnline === true;
+
+  // 🔥 SIMPLE ONLINE/OFFLINE LOGIC
+  const status = isOnline ? "online" : "offline";
+  const statusColor = isOnline ? STATUS_COLORS.online : STATUS_COLORS.offline;
+
+  // 🔥 HIDE FEMALE IN VISIT MODE
+  if (mode === "visit" && provider?.personalInfo?.gender === "Female") {
+    return null;
+  }
+
+  const handleCardClick = () =>
+    navigate(`/provider/${provider?._id}?mode=${mode}`);
+
+  const handleBookNow = (e) => {
+    e.stopPropagation();
+    navigate(`/provider/${provider?._id}?mode=${mode}&action=book`);
+  };
+
+  // 🔥 BUTTON LOGIC
+  const isButtonDisabled = mode === "visit" ? false : !isOnline;
+
+  const buttonText =
+    mode === "visit"
+      ? MODE_CONFIGS.visit.activeText
+      : isOnline
+        ? MODE_CONFIGS[mode].activeText
+        : MODE_CONFIGS[mode].unavailableText;
+
+
+  return (
+    <div
+      onClick={handleCardClick}
+      className="group bg-white border border-gray-200 rounded-3xl shadow-sm hover:shadow-md cursor-pointer overflow-hidden"
+    >
+      {/* ===================== BANNER ===================== */}
+      <div className="relative">
+        <img src={BannerImage} alt="banner" className="w-full h-full object-cover" />
+
+        {/* 🔥 DO NOT SHOW BADGE IN VISIT MODE */}
+        {mode !== "visit" && (
+          <div className="absolute top-3 right-3">
+            <StatusBadge status={status} statusColor={statusColor} />
+          </div>
+        )}
+
+        <div className="absolute -bottom-8 left-4 rounded-full ring-4 ring-white">
+          <ProviderImage provider={provider} />
+        </div>
+      </div>
+
+      {/* ===================== BODY ===================== */}
+      <div className="pt-10 pb-4 px-4">
+        {/* NAME + SERVICE */}
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold text-gray-900 truncate">
+              {provider?.personalInfo?.fullName || "Unknown Provider"}
+            </h3>
+            <p className="text-xs text-gray-600 truncate">
+              {provider?.services?.primary || "Service Not Assigned"}
+            </p>
+          </div>
+
+          <button
+            onClick={(e) => e.stopPropagation()}
+            className="w-8 h-8 rounded-full bg-white shadow-sm border flex items-center justify-center"
+          >
+            <Bookmark className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+
+        <VerificationBadge verified={true} />
+
+        {/* QUICK STATS */}
+        <div className="flex justify-between items-center text-xs text-gray-600 mt-4">
+          <span className="flex items-center gap-1">
+            <Star className="w-3.5 h-3.5 text-yellow-400" />
+            {provider?.ratings?.overall?.toFixed?.(1) || "0.0"}
+          </span>
+
+          <span>{provider?.professional?.experience || 0} yrs+</span>
+
+          {/* <span className="flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5" />
+            {provider?.address?.city || "N/A"}
+          </span> */}
+        </div>
+
+        {/* PRICING */}
+        <div className="grid grid-cols-4 gap-2 mt-4 text-xs">
+          <PriceItem icon={Phone} price={provider?.pricing?.call?.basePrice} variant="call" />
+          <PriceItem icon={Video} price={provider?.pricing?.video?.basePrice} variant="video" />
+          <PriceItem icon={MessageCircle} price={provider?.pricing?.chat?.basePrice} variant="chat" />
+          <PriceItem icon={MapPin} price={provider?.pricing?.visit?.basePrice} variant="visit" />
+        </div>
+
+        {/* BUTTON */}
+        <button
+          onClick={handleBookNow}
+          disabled={isButtonDisabled}
+          className={`w-full mt-5 py-2.5 rounded-xl text-sm font-medium ${isButtonDisabled
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : `${MODE_CONFIGS[mode].buttonClass} text-white`
+            }`}
+        >
+          {buttonText}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default memo(ProviderCard);
+
+
+
+
+
+
 // import { memo, useMemo } from "react";
 // import { useNavigate } from "react-router-dom";
 // import {
@@ -630,14 +862,13 @@
 // import BannerImage from "../../Logos/bannerImage.png";
 // import { usePresence } from "../../context/UserStatusContext";
 
-
 // // ======================== CONSTANTS ========================
 
 // const STATUS_COLORS = {
 //   online: "bg-green-500",
 //   recently_active: "bg-orange-400",
 //   busy: "bg-red-500",
-//   offline: "bg-gray-400"
+//   offline: "bg-gray-400",
 // };
 
 // const MODE_CONFIGS = {
@@ -663,7 +894,6 @@
 //   }
 // };
 
-
 // const PRICE_STYLES = {
 //   call: "bg-[#E5F0FF]",
 //   video: "bg-[#FEDDED]",
@@ -671,11 +901,10 @@
 //   visit: "bg-[#FFE3CC]"
 // };
 
-
 // // ======================== SUB COMPONENTS ========================
+
 // const ProviderImage = memo(({ provider }) => {
-//   const initials = `${provider?.personalInfo?.firstName?.[0] || ""}${provider?.personalInfo?.lastName?.[0] || ""
-//     }`.toUpperCase();
+//   const initials = `${provider?.personalInfo?.firstName?.[0] || ""}${provider?.personalInfo?.lastName?.[0] || ""}`.toUpperCase();
 
 //   return provider?.personalInfo?.profileImage ? (
 //     <img
@@ -693,7 +922,7 @@
 // const StatusBadge = memo(({ status, statusColor }) => (
 //   <div className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-black/40 text-white">
 //     <span className={`w-2 h-2 rounded-full ${statusColor}`} />
-//     <span className="capitalize">{status}</span>
+//     <span className="capitalize">{status.replace("_", " ")}</span>
 //   </div>
 // ));
 
@@ -719,43 +948,58 @@
 //   );
 // });
 
-
 // // ======================== MAIN CARD ========================
+
 // const ProviderCard = ({ provider, mode = "visit" }) => {
 //   const navigate = useNavigate();
 //   const { presenceMap } = usePresence();
 
-//   // 🔥 Merge live presence with API
-//   const livePresence = presenceMap?.[provider?._id] || provider?.presence || {};
-//   const isOnline = livePresence?.isOnline === true;
+//   // ===========================================================
+//   // 🔥 RESTORED FULL MULTI-STATUS LOGIC
+//   // ===========================================================
+//   const { status, statusColor } = useMemo(() => {
+//     const livePresence = presenceMap?.[provider?._id] || provider?.presence || {};
 
-//   // 🔥 SIMPLE ONLINE/OFFLINE LOGIC
-//   const status = isOnline ? "online" : "offline";
-//   const statusColor = isOnline ? STATUS_COLORS.online : STATUS_COLORS.offline;
+//     // Restore advanced states:
+//     const finalStatus =
+//       livePresence?.status ||     // busy, recently_active, away, etc.
+//       (livePresence?.isOnline ? "online" : "offline");
 
-//   // 🔥 HIDE FEMALE IN VISIT MODE
+//     return {
+//       status: finalStatus,
+//       statusColor: STATUS_COLORS[finalStatus] || STATUS_COLORS.offline,
+//     };
+//   }, [presenceMap, provider]);
+
+//   const isOnline = status === "online";
+
+//   // ===========================================================
+//   // 🔥 VISIT MODE HIDE FEMALE
+//   // ===========================================================
 //   if (mode === "visit" && provider?.personalInfo?.gender === "Female") {
 //     return null;
 //   }
 
-//   const handleCardClick = () =>
-//     navigate(`/provider/${provider?._id}?mode=${mode}`);
-
-//   const handleBookNow = (e) => {
-//     e.stopPropagation();
-//     navigate(`/provider/${provider?._id}?mode=${mode}&action=book`);
-//   };
-
-//   // 🔥 BUTTON LOGIC
+//   // ===========================================================
+//   // 🔥 BUTTON LOGIC (ONLINE ONLY)
+//   // ===========================================================
 //   const isButtonDisabled = mode === "visit" ? false : !isOnline;
 
 //   const buttonText =
 //     mode === "visit"
 //       ? MODE_CONFIGS.visit.activeText
 //       : isOnline
-//         ? MODE_CONFIGS[mode].activeText
-//         : MODE_CONFIGS[mode].unavailableText;
+//       ? MODE_CONFIGS[mode].activeText
+//       : MODE_CONFIGS[mode].unavailableText;
 
+//   const handleCardClick = () => {
+//     navigate(`/provider/${provider?._id}?mode=${mode}`);
+//   };
+
+//   const handleBookNow = (e) => {
+//     e.stopPropagation();
+//     navigate(`/provider/${provider?._id}?mode=${mode}&action=book`);
+//   };
 
 //   return (
 //     <div
@@ -766,7 +1010,7 @@
 //       <div className="relative">
 //         <img src={BannerImage} alt="banner" className="w-full h-full object-cover" />
 
-//         {/* 🔥 DO NOT SHOW BADGE IN VISIT MODE */}
+//         {/* 🔥 DO NOT SHOW STATUS IN VISIT MODE */}
 //         {mode !== "visit" && (
 //           <div className="absolute top-3 right-3">
 //             <StatusBadge status={status} statusColor={statusColor} />
@@ -828,10 +1072,11 @@
 //         <button
 //           onClick={handleBookNow}
 //           disabled={isButtonDisabled}
-//           className={`w-full mt-5 py-2.5 rounded-xl text-sm font-medium ${isButtonDisabled
+//           className={`w-full mt-5 py-2.5 rounded-xl text-sm font-medium ${
+//             isButtonDisabled
 //               ? "bg-gray-200 text-gray-500 cursor-not-allowed"
 //               : `${MODE_CONFIGS[mode].buttonClass} text-white`
-//             }`}
+//           }`}
 //         >
 //           {buttonText}
 //         </button>
@@ -841,248 +1086,3 @@
 // };
 
 // export default memo(ProviderCard);
-
-
-
-
-
-
-import { memo, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Star,
-  Phone,
-  Video,
-  MapPin,
-  CheckCircle,
-  MessageCircle,
-  Bookmark
-} from "lucide-react";
-
-import BannerImage from "../../Logos/bannerImage.png";
-import { usePresence } from "../../context/UserStatusContext";
-
-// ======================== CONSTANTS ========================
-
-const STATUS_COLORS = {
-  online: "bg-green-500",
-  recently_active: "bg-orange-400",
-  busy: "bg-red-500",
-  offline: "bg-gray-400",
-};
-
-const MODE_CONFIGS = {
-  call: {
-    buttonClass: "bg-[#1A1A1A] hover:bg-green-700",
-    activeText: "Start Call",
-    unavailableText: "Call Unavailable"
-  },
-  video: {
-    buttonClass: "bg-[#1A1A1A] hover:bg-green-700",
-    activeText: "Start Video Call",
-    unavailableText: "Video Unavailable"
-  },
-  chat: {
-    buttonClass: "bg-[#1A1A1A] hover:bg-green-700",
-    activeText: "Start Chat",
-    unavailableText: "Chat Unavailable"
-  },
-  visit: {
-    buttonClass: "bg-[#1A1A1A] hover:bg-green-700",
-    activeText: "View & Book",
-    unavailableText: "Currently Busy"
-  }
-};
-
-const PRICE_STYLES = {
-  call: "bg-[#E5F0FF]",
-  video: "bg-[#FEDDED]",
-  chat: "bg-[#FFF6CC]",
-  visit: "bg-[#FFE3CC]"
-};
-
-// ======================== SUB COMPONENTS ========================
-
-const ProviderImage = memo(({ provider }) => {
-  const initials = `${provider?.personalInfo?.firstName?.[0] || ""}${provider?.personalInfo?.lastName?.[0] || ""}`.toUpperCase();
-
-  return provider?.personalInfo?.profileImage ? (
-    <img
-      src={provider.personalInfo.profileImage}
-      alt="Profile"
-      className="h-16 w-16 rounded-full object-cover"
-    />
-  ) : (
-    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold">
-      {initials}
-    </div>
-  );
-});
-
-const StatusBadge = memo(({ status, statusColor }) => (
-  <div className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-black/40 text-white">
-    <span className={`w-2 h-2 rounded-full ${statusColor}`} />
-    <span className="capitalize">{status.replace("_", " ")}</span>
-  </div>
-));
-
-const VerificationBadge = memo(({ verified }) =>
-  verified ? (
-    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
-      <CheckCircle className="w-3.5 h-3.5" />
-      Verified
-    </span>
-  ) : null
-);
-
-const PriceItem = memo(({ icon: Icon, price, variant }) => {
-  if (!price || Number(price) === 0) return null;
-
-  return (
-    <div className={`flex-1 flex flex-col items-center px-2 py-2 rounded-xl ${PRICE_STYLES[variant]}`}>
-      <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center">
-        <Icon className="w-4 h-4" />
-      </div>
-      <span className="text-xs font-medium">₹{price}</span>
-    </div>
-  );
-});
-
-// ======================== MAIN CARD ========================
-
-const ProviderCard = ({ provider, mode = "visit" }) => {
-  const navigate = useNavigate();
-  const { presenceMap } = usePresence();
-
-  // ===========================================================
-  // 🔥 RESTORED FULL MULTI-STATUS LOGIC
-  // ===========================================================
-  const { status, statusColor } = useMemo(() => {
-    const livePresence = presenceMap?.[provider?._id] || provider?.presence || {};
-
-    // Restore advanced states:
-    const finalStatus =
-      livePresence?.status ||     // busy, recently_active, away, etc.
-      (livePresence?.isOnline ? "online" : "offline");
-
-    return {
-      status: finalStatus,
-      statusColor: STATUS_COLORS[finalStatus] || STATUS_COLORS.offline,
-    };
-  }, [presenceMap, provider]);
-
-  const isOnline = status === "online";
-
-  // ===========================================================
-  // 🔥 VISIT MODE HIDE FEMALE
-  // ===========================================================
-  if (mode === "visit" && provider?.personalInfo?.gender === "Female") {
-    return null;
-  }
-
-  // ===========================================================
-  // 🔥 BUTTON LOGIC (ONLINE ONLY)
-  // ===========================================================
-  const isButtonDisabled = mode === "visit" ? false : !isOnline;
-
-  const buttonText =
-    mode === "visit"
-      ? MODE_CONFIGS.visit.activeText
-      : isOnline
-      ? MODE_CONFIGS[mode].activeText
-      : MODE_CONFIGS[mode].unavailableText;
-
-  const handleCardClick = () => {
-    navigate(`/provider/${provider?._id}?mode=${mode}`);
-  };
-
-  const handleBookNow = (e) => {
-    e.stopPropagation();
-    navigate(`/provider/${provider?._id}?mode=${mode}&action=book`);
-  };
-
-  return (
-    <div
-      onClick={handleCardClick}
-      className="group bg-white border border-gray-200 rounded-3xl shadow-sm hover:shadow-md cursor-pointer overflow-hidden"
-    >
-      {/* ===================== BANNER ===================== */}
-      <div className="relative">
-        <img src={BannerImage} alt="banner" className="w-full h-full object-cover" />
-
-        {/* 🔥 DO NOT SHOW STATUS IN VISIT MODE */}
-        {mode !== "visit" && (
-          <div className="absolute top-3 right-3">
-            <StatusBadge status={status} statusColor={statusColor} />
-          </div>
-        )}
-
-        <div className="absolute -bottom-8 left-4 rounded-full ring-4 ring-white">
-          <ProviderImage provider={provider} />
-        </div>
-      </div>
-
-      {/* ===================== BODY ===================== */}
-      <div className="pt-10 pb-4 px-4">
-        {/* NAME + SERVICE */}
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <h3 className="text-base font-semibold text-gray-900 truncate">
-              {provider?.personalInfo?.fullName || "Unknown Provider"}
-            </h3>
-            <p className="text-xs text-gray-600 truncate">
-              {provider?.services?.primary || "Service Not Assigned"}
-            </p>
-          </div>
-
-          <button
-            onClick={(e) => e.stopPropagation()}
-            className="w-8 h-8 rounded-full bg-white shadow-sm border flex items-center justify-center"
-          >
-            <Bookmark className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-
-        <VerificationBadge verified={true} />
-
-        {/* QUICK STATS */}
-        <div className="flex justify-between items-center text-xs text-gray-600 mt-4">
-          <span className="flex items-center gap-1">
-            <Star className="w-3.5 h-3.5 text-yellow-400" />
-            {provider?.ratings?.overall?.toFixed?.(1) || "0.0"}
-          </span>
-
-          <span>{provider?.professional?.experience || 0} yrs+</span>
-
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5" />
-            {provider?.address?.city || "N/A"}
-          </span>
-        </div>
-
-        {/* PRICING */}
-        <div className="grid grid-cols-4 gap-2 mt-4 text-xs">
-          <PriceItem icon={Phone} price={provider?.pricing?.call?.basePrice} variant="call" />
-          <PriceItem icon={Video} price={provider?.pricing?.video?.basePrice} variant="video" />
-          <PriceItem icon={MessageCircle} price={provider?.pricing?.chat?.basePrice} variant="chat" />
-          <PriceItem icon={MapPin} price={provider?.pricing?.visit?.basePrice} variant="visit" />
-        </div>
-
-        {/* BUTTON */}
-        <button
-          onClick={handleBookNow}
-          disabled={isButtonDisabled}
-          className={`w-full mt-5 py-2.5 rounded-xl text-sm font-medium ${
-            isButtonDisabled
-              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-              : `${MODE_CONFIGS[mode].buttonClass} text-white`
-          }`}
-        >
-          {buttonText}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-export default memo(ProviderCard);

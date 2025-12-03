@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Menu, X, Bell, LogOut, ChevronDown, User, Wallet, CalendarCheck } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../../hooks/useAuth';
-import { useWallet } from '../../Screen/Booking/hooks/useWallet';
+import { useWallet } from '../../Screen/Wallet/contexts';
 import { usePresence } from "../../context/UserStatusContext";
 import { useProviderId } from '../../hooks/useProviderId';
 import axios from 'axios';

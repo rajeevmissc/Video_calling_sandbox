@@ -156,26 +156,6 @@ function Call() {
     }
   }, [isChatMode, agora.localVideoTrack, ui.showChat, callEnded]);
 
-
-  const handleInsufficientBalance = useCallback(({ reason, currentBalance, requiredAmount, totalCharged }) => {
-  console.log('💰 Call ending due to insufficient balance:', {
-    reason,
-    currentBalance,
-    requiredAmount,
-    totalCharged
-  });
-
-  // Show alert to user
-  alert(`Call ended: Insufficient balance\n\nYou need ₹${requiredAmount} for the next minute.\nCurrent balance: ₹${currentBalance}\nTotal charged: ₹${totalCharged}\n\nPlease recharge your wallet to continue.`);
-
-  // End the call
-  if (isChatMode) {
-    endChat();
-  } else {
-    endCall();
-  }
-}, [isChatMode, endChat, endCall]);
-
   // Billing logic
   const billing = useCallBilling(
     channelName,
@@ -429,6 +409,26 @@ useEffect(() => {
   const handleBookAnother = useCallback(() => {
     navigate("/services");
   }, [navigate]);
+
+    const handleInsufficientBalance = useCallback(({ reason, currentBalance, requiredAmount, totalCharged }) => {
+  console.log('💰 Call ending due to insufficient balance:', {
+    reason,
+    currentBalance,
+    requiredAmount,
+    totalCharged
+  });
+
+  // Show alert to user
+  alert(`Call ended: Insufficient balance\n\nYou need ₹${requiredAmount} for the next minute.\nCurrent balance: ₹${currentBalance}\nTotal charged: ₹${totalCharged}\n\nPlease recharge your wallet to continue.`);
+
+  // End the call
+  if (isChatMode) {
+    endChat();
+  } else {
+    endCall();
+  }
+}, [isChatMode, endChat, endCall]);
+
 
   const containerClass = isChatMode ? "call-container call-mode-chat" : "call-container";
   const displayInfo = getUserDisplayInfo(callData?.userRole, callData.providerName);

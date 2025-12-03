@@ -9,7 +9,7 @@ const ChatModeOverlay = ({
   if (!isWaiting || callEnded) return null;
 
   return (
-    <div className="chat-mode-loading-overlay">
+    <div className="chat-mode-loading-overlay" style={{ zIndex: 100 }}>
       <div className="chat-loading-spinner"></div>
       <div className="chat-loading-content">
         <h2 className="chat-loading-title">Waiting for Happiness Executive</h2>

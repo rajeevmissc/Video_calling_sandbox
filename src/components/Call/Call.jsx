@@ -444,18 +444,21 @@ useEffect(() => {
         isChatMode={isChatMode}
       />
 
-      <ChatModeOverlay
-        isWaiting={currentIsWaitingForProviderInChat}
-        callEnded={callEnded}
-        waitingTime={waitingTime}
-      />
-
       {/* Chat */}
       <div
         className={`call-chat-sidebar ${
           (ui.showChat && !callEnded) || isChatMode ? "open" : ""
         }`}
+        style={{ zIndex: isChatMode ? 10 : 50 }}
       >
+
+      <ChatModeOverlay
+        isWaiting={currentIsWaitingForProviderInChat}
+        callEnded={callEnded}
+        waitingTime={waitingTime}
+      />  
+
+
         <ChatPanel
           chatMessages={filterChatMessages(agora.chatMessages)}
           chatInput={agora.chatInput}
@@ -514,7 +517,7 @@ useEffect(() => {
       />
 
       {showEndCallPopup && (
-        <div className="call-modal-overlay">
+        <div className="call-modal-overlay" style={{ zIndex: 9999, position: 'fixed' }}>
           <EndCallPopup
             callDuration={agora.callDuration}
             callStatus={callStatus}

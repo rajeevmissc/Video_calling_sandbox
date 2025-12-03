@@ -410,7 +410,7 @@ useEffect(() => {
   }, [navigate]);
 
   const containerClass = isChatMode ? "call-container call-mode-chat" : "call-container";
-  const displayInfo = getUserDisplayInfo(callData?.userRole, callData.providerData?.data.personalInfo.fullName);
+  const displayInfo = getUserDisplayInfo(callData?.userRole, callData.providerName);
   console.log('......................................................', callData)
   return (
     <div className={containerClass}>
@@ -467,7 +467,7 @@ useEffect(() => {
           isRemoteTyping={isRemoteTyping}
           onTypingChange={handleTypingChange}
           onEndChat={endChat}
-          providerName={callData.providerData?.fullName}
+          providerName={callData.providerName}
         />
       </div>
 

@@ -183,63 +183,13 @@ import { useRef, useCallback, useEffect } from 'react';
 export const useSimpleAudio = () => {
   const audioRef = useRef(null);
   const isPlayingRef = useRef(false);
-  const unlockPromiseRef = useRef(null);
 
   useEffect(() => {
     const audio = new Audio('https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg');
     audio.loop = true;
     audio.preload = 'auto';
     audio.volume = 1.0;
-
     audioRef.current = audio;
-
-    // Create a single unlock promise that resolves on first interaction
-    unlockPromiseRef.current = new Promise((resolve) => {
-      const unlockAudio = async () => {
-        if (sessionStorage.getItem('audioUnlocked') === 'true') {
-          resolve(true);
-          return;
-        }
-
-        console.log('🔓 Unlocking audio...');
-        
-        try {
-          audio.muted = true;
-          await audio.play();
-          audio.pause();
-          audio.currentTime = 0;
-          audio.muted = false;
-          
-          sessionStorage.setItem('audioUnlocked', 'true');
-          console.log('✅ Audio unlocked!');
-          resolve(true);
-          
-          // Remove listeners after successful unlock
-          cleanup();
-        } catch (e) {
-          console.log('Unlock attempt failed, will retry on next interaction', e);
-        }
-      };
-
-      const cleanup = () => {
-        document.removeEventListener('pointerdown', unlockAudio);
-        document.removeEventListener('touchstart', unlockAudio);
-        document.removeEventListener('click', unlockAudio);
-        document.removeEventListener('keydown', unlockAudio);
-      };
-
-      // If already unlocked in session, resolve immediately
-      if (sessionStorage.getItem('audioUnlocked') === 'true') {
-        resolve(true);
-        return;
-      }
-
-      // Otherwise wait for interaction
-      document.addEventListener('pointerdown', unlockAudio);
-      document.addEventListener('touchstart', unlockAudio, { passive: true });
-      document.addEventListener('click', unlockAudio);
-      document.addEventListener('keydown', unlockAudio);
-    });
 
     return () => {
       if (audioRef.current) {
@@ -249,14 +199,37 @@ export const useSimpleAudio = () => {
     };
   }, []);
 
-  // Play ringtone - WAIT for unlock if needed
-  const play = useCallback(async () => {
+  // ✅ ADD THIS: Manual unlock function
+  const unlock = useCallback(async () => {
     if (!audioRef.current) return false;
 
     try {
-      // Wait for audio to be unlocked (resolves immediately if already unlocked)
-      await unlockPromiseRef.current;
+      audioRef.current.muted = true;
+      await audioRef.current.play();
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.muted = false;
       
+      sessionStorage.setItem('audioUnlocked', 'true');
+      console.log('✅ Audio unlocked!');
+      return true;
+    } catch (e) {
+      console.error('❌ Unlock failed:', e);
+      return false;
+    }
+  }, []);
+
+  const play = useCallback(async () => {
+    if (!audioRef.current) return false;
+
+    const isUnlocked = sessionStorage.getItem('audioUnlocked') === 'true';
+    
+    if (!isUnlocked) {
+      console.warn('🔒 Audio blocked');
+      return false;
+    }
+
+    try {
       audioRef.current.currentTime = 0;
       await audioRef.current.play();
       isPlayingRef.current = true;
@@ -270,13 +243,11 @@ export const useSimpleAudio = () => {
 
   const stop = useCallback(() => {
     if (!audioRef.current || !isPlayingRef.current) return;
-
     audioRef.current.pause();
     audioRef.current.currentTime = 0;
     isPlayingRef.current = false;
-
     console.log('🔇 Ringtone stopped');
   }, []);
 
-  return { play, stop };
+  return { play, stop, unlock }; // ✅ EXPORT unlock
 };

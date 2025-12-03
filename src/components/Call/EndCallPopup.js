@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 const EndCallPopup = ({
   onShareExperience,
-  onClose,
   callDuration,
   totalCharged,
   callType,
@@ -11,12 +10,6 @@ const EndCallPopup = ({
 }) => {
 
   const navigate = useNavigate();
- console.log("EndCallPopup rendered with:", {
-    callDuration,
-    totalCharged,
-    callType,
-    userRole
-  });
   // Format duration from seconds to MM:SS
   const formatDuration = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -38,17 +31,6 @@ const EndCallPopup = ({
   <div className="bg-slate-800 rounded-xl border border-slate-700 
       p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md shadow-2xl 
       animate-slideDown relative">
-
-    {/* Close Button */}
-    <button
-      onClick={onClose}
-      className="absolute top-2 right-2 sm:top-4 sm:right-4 
-        text-gray-400 hover:text-white transition-colors 
-        p-1.5 sm:p-2 hover:bg-slate-700 rounded-lg"
-    >
-      <FaTimes className="text-sm sm:text-lg" />
-    </button>
-
     {/* Content */}
     <div className="text-center mb-4 sm:mb-6">
 

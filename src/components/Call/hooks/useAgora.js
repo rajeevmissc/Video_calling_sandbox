@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import AgoraRTM from 'agora-rtm-sdk';
 import axios from 'axios';
-import { getRestoredDuration } from '../RefreshProtection';
+
 import {
   FaMicrophone,
   FaMicrophoneSlash,
@@ -41,7 +41,7 @@ export const useAgora = (channelName, callType, navigate, userRole) => {
   const [isVideoOff, setIsVideoOff] = useState(callType === 'audio' || callType === 'chat');
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
-  const [callDuration, setCallDuration] = useState(() => getRestoredDuration(channelName));
+  const [callDuration, setCallDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 

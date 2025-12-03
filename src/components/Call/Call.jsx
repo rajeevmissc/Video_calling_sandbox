@@ -568,7 +568,7 @@ import DeclinedPopup from './features/Popups/DeclinedPopup';
 import ChatModeHeader from './features/ChatMode/ChatModeHeader';
 import ChatModeOverlay from './features/ChatMode/ChatModeOverlay';
 import CallModeLayout from './features/CallMode/CallModeLayout';
-import RefreshProtection from './RefreshProtection';
+
 // Utilities
 import { CALL_STATUS, CALL_TYPE, TIMING, SYSTEM_MESSAGES } from './utils/constants';
 import {
@@ -987,12 +987,6 @@ function Call() {
         connectionState={agora.connectionState}
         isChatMode={isChatMode}
       />
-
-    <RefreshProtection 
-      isActive={callConnected && !callEnded} 
-      channelName={channelName}
-      callDuration={agora.callDuration}
-    />
 
       <SwitchingOverlay
         isSwitching={isSwitchingCallType}

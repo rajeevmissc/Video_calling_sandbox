@@ -221,7 +221,6 @@ class WalletAPI {
     return this.request('/wallet/balance');
   }
 
-  // UPDATED: Now credits the totalWalletCredit (base + bonus) to wallet
   async rechargeWallet(amount, transactionId) {
     return this.request('/wallet/recharge', {
       method: 'POST',
@@ -234,7 +233,6 @@ class WalletAPI {
     });
   }
 
-  // UNCHANGED
   async deductFromWallet(amount, description, serviceId, serviceType, providerId, metadata = {}) {
     console.log('data', amount, description, serviceId, serviceType, providerId, metadata);
     return this.request('/wallet/deduct', {
@@ -255,24 +253,46 @@ class WalletAPI {
     return this.request('/wallet/stats');
   }
 
-  // UPDATED: Now sends complete breakdown to backend
+  // FIXED: Proper amount calculation
   async createCheckoutSession(payableAmount, walletCreditAmount, breakdown, paymentMethods = ['card']) {
+    // Round to 2 decimal places to avoid floating point issues
+    const roundedPayableAmount = Math.round(payableAmount * 100) / 100;
+    
+    // Convert to paisa (smallest currency unit) - multiply by 100
+    const amountInPaisa = Math.round(roundedPayableAmount * 100);
+    
+    console.log('Payment Breakdown:', {
+      baseAmount: breakdown.baseAmount,
+      gstAmount: breakdown.gstAmount,
+      bonusAmount: breakdown.bonusAmount,
+      payableAmountInRupees: roundedPayableAmount,
+      payableAmountInPaisa: amountInPaisa,
+      walletCreditAmount: breakdown.totalWalletCredit
+    });
+
     return this.request('/payments/create-checkout-session', {
       method: 'POST',
       body: JSON.stringify({
-        amount: Math.round(payableAmount * 100), // Amount user pays (with GST) in paisa
-        walletCreditAmount: walletCreditAmount, // Base amount for wallet
-        bonusAmount: breakdown.bonusAmount, // Bonus amount
+        amount: amountInPaisa, // Amount user pays (with GST) in paisa
+        walletCreditAmount: breakdown.baseAmount, // Base amount that user chose to recharge
+        bonusAmount: breakdown.bonusAmount, // Bonus amount to be added
         totalWalletCredit: breakdown.totalWalletCredit, // Total to credit (base + bonus)
         discountPercent: breakdown.discountPercent,
         gstAmount: breakdown.gstAmount,
         gstPercent: breakdown.gstPercent,
         baseAmount: breakdown.baseAmount,
+        finalPayableAmount: roundedPayableAmount, // Amount in rupees for reference
         currency: 'INR',
         payment_method_types: paymentMethods,
         metadata: { 
           type: 'wallet_recharge',
-          breakdown: JSON.stringify(breakdown)
+          breakdown: JSON.stringify({
+            baseAmount: breakdown.baseAmount,
+            bonusAmount: breakdown.bonusAmount,
+            totalWalletCredit: breakdown.totalWalletCredit,
+            gstAmount: breakdown.gstAmount,
+            finalPayableAmount: roundedPayableAmount
+          })
         },
         userData: userData
       }),

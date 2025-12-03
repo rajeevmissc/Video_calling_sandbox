@@ -3,7 +3,7 @@ import {
   Wallet, RefreshCw, Bell, Plus, Eye, EyeOff,
   ArrowUpRight, ArrowDownLeft, Receipt, CheckCircle,
   AlertCircle, CreditCard, Shield, ExternalLink, History,
-  Search, X, Download
+  Search, X, Download,Gift  
 } from 'lucide-react';
 import Loder from '../../components/Loading';
 import { useWallet, useToast } from './contexts';
@@ -13,6 +13,7 @@ import { walletAPI } from './services';
 import { useWallet as useGlobalWallet } from '../Booking/hooks/useWallet';
 
 // ==================== PAYMENT SUCCESS PAGE ====================
+// ==================== PAYMENT SUCCESS PAGE ====================
 export const PaymentSuccessPage = memo(({ onReturnToWallet }) => {
   const { refreshWallet } = useWallet();
   const { showSuccess } = useToast();
@@ -20,7 +21,7 @@ export const PaymentSuccessPage = memo(({ onReturnToWallet }) => {
   const [paymentDetails, setPaymentDetails] = useState(null);
   const [error, setError] = useState(null);
   
- const { fetchBalance: refreshHeaderWallet } = useGlobalWallet();
+  const { fetchBalance: refreshHeaderWallet } = useGlobalWallet();
 
   useEffect(() => {
     const processPayment = async () => {
@@ -37,12 +38,26 @@ export const PaymentSuccessPage = memo(({ onReturnToWallet }) => {
         const response = await walletAPI.verifyPaymentSession(orderId);
 
         if (response.success) {
-          const amount = response.data.amount;
-          await walletAPI.rechargeWallet(amount, orderId);
+          // 🔥 NEW: Extract breakdown from response
+          const totalWalletCredit = response.data.totalWalletCredit || response.data.amount;
+          const baseAmount = response.data.baseAmount || response.data.amount;
+          const bonusAmount = response.data.bonusAmount || 0;
+          
+          // Credit the wallet with total amount (base + bonus)
+          await walletAPI.rechargeWallet(totalWalletCredit, orderId);
           await refreshWallet();
-          await refreshHeaderWallet();  // 🔥 this updates Header wallet instantly
-          setPaymentDetails({ amount, orderId, status: 'success' });
-          showSuccess(`₹${amount} added to your wallet!`);
+          await refreshHeaderWallet();
+          
+          // 🔥 NEW: Store detailed payment info
+          setPaymentDetails({ 
+            amount: totalWalletCredit,
+            baseAmount: baseAmount,
+            bonusAmount: bonusAmount,
+            orderId, 
+            status: 'success' 
+          });
+          
+          showSuccess(`₹${totalWalletCredit} added to your wallet!`);
         } else {
           throw new Error('Payment verification failed');
         }
@@ -55,7 +70,7 @@ export const PaymentSuccessPage = memo(({ onReturnToWallet }) => {
     };
 
     processPayment();
-  }, [refreshWallet, showSuccess]);
+  }, [refreshWallet, showSuccess, refreshHeaderWallet]);
 
   if (isProcessing) {
     return (
@@ -97,13 +112,32 @@ export const PaymentSuccessPage = memo(({ onReturnToWallet }) => {
         <p className="text-gray-600 text-sm mb-4">Your wallet has been recharged successfully</p>
 
         {paymentDetails && (
-          <div className="bg-gray-50 rounded-xl p-3 mb-4 text-left text-sm">
-            <div className="flex justify-between mb-1">
-              <span className="text-gray-600">Amount Added:</span>
-              <span className="font-bold text-green-600">₹{paymentDetails.amount}</span>
-            </div>
+          <div className="bg-gray-50 rounded-xl p-4 mb-4 text-left space-y-2">
+            {/* 🔥 NEW: Show bonus breakdown if exists */}
+            {paymentDetails.bonusAmount > 0 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Base Amount:</span>
+                  <span className="font-semibold text-gray-900">₹{paymentDetails.baseAmount}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 flex items-center gap-1">
+                    <Gift className="w-3 h-3 text-green-600" />
+                    Bonus Amount:
+                  </span>
+                  <span className="font-semibold text-green-600">+₹{paymentDetails.bonusAmount}</span>
+                </div>
+                <div className="border-t border-gray-200 my-2"></div>
+              </>
+            )}
+            
             <div className="flex justify-between">
-              <span className="text-gray-500">Transaction ID:</span>
+              <span className="text-gray-600 font-medium">Total Credited:</span>
+              <span className="font-bold text-green-600 text-lg">₹{paymentDetails.amount}</span>
+            </div>
+            
+            <div className="flex justify-between pt-2 border-t border-gray-200">
+              <span className="text-gray-500 text-xs">Transaction ID:</span>
               <span className="text-gray-700 font-mono text-xs">
                 {paymentDetails.orderId?.slice(0, 20)}...
               </span>

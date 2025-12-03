@@ -1,60 +1,57 @@
-// hooks/useSimpleAudio.js
 import { useRef, useCallback, useEffect } from 'react';
 
-/**
- * Custom hook to manage ringtone playback
- * Simple, reliable audio management without complex state
- */
 export const useSimpleAudio = () => {
   const audioRef = useRef(null);
   const isPlayingRef = useRef(false);
   const isUnlockedRef = useRef(false);
 
-  // Initialize audio once
   useEffect(() => {
     const audio = new Audio('/sounds/ringtone.mp3');
     audio.loop = true;
     audio.preload = 'auto';
     audio.volume = 1.0;
+
     audioRef.current = audio;
 
-    // Unlock audio on first user gesture (iOS/Chrome requirement)
+    // REAL audio unlock
     const unlockAudio = () => {
-      if (isUnlockedRef.current) return;
+      if (!audioRef.current || isUnlockedRef.current) return;
 
-      const tempAudio = new Audio();
-      tempAudio.play().catch(() => {});
-      isUnlockedRef.current = true;
+      console.log('🔓 User interaction → unlocking audio...');
 
-      console.log('🔓 Audio unlocked by user gesture');
+      audioRef.current.muted = true;
 
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
+      audioRef.current
+        .play()
+        .then(() => {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          audioRef.current.muted = false;
+
+          isUnlockedRef.current = true;
+          console.log('✅ Audio successfully unlocked!');
+        })
+        .catch((e) => {
+          console.log('Unlock failed', e);
+        });
     };
 
-    window.addEventListener('click', unlockAudio);
-    window.addEventListener('touchstart', unlockAudio);
+    // Must allow multiple touches until unlocked
+    document.addEventListener('pointerdown', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current = null;
-      }
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('pointerdown', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
     };
   }, []);
 
   // Play ringtone
   const play = useCallback(async () => {
-    if (!audioRef.current || isPlayingRef.current) {
-      console.warn('⚠️ Audio not ready or already playing');
-      return false;
-    }
+    if (!audioRef.current) return false;
 
     if (!isUnlockedRef.current) {
-      console.warn('🔒 Audio blocked - no user interaction yet');
+      console.warn('🔒 Audio blocked: user has not interacted yet');
       return false;
     }
 
@@ -64,26 +61,21 @@ export const useSimpleAudio = () => {
       isPlayingRef.current = true;
       console.log('🔊 Ringtone playing');
       return true;
-    } catch (error) {
-      console.error('❌ Audio play error:', error);
+    } catch (err) {
+      console.error('❌ Audio play error:', err);
       return false;
     }
   }, []);
 
   // Stop ringtone
   const stop = useCallback(() => {
-    if (!audioRef.current || !isPlayingRef.current) {
-      return;
-    }
+    if (!audioRef.current || !isPlayingRef.current) return;
 
-    try {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      isPlayingRef.current = false;
-      console.log('🔇 Ringtone stopped');
-    } catch (error) {
-      console.error('❌ Audio stop error:', error);
-    }
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+    isPlayingRef.current = false;
+
+    console.log('🔇 Ringtone stopped');
   }, []);
 
   return { play, stop };

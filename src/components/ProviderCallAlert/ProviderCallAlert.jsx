@@ -22,7 +22,7 @@ const ProviderCallAlert = ({ providerId }) => {
   const mountedRef = useRef(true);
   const dragStartY = useRef(0);
   const processingRef = useRef(false);
-  console.log("provider..................", provider);
+  console.log("provider..................", providerId);
   // Custom hooks
   const { currentCall, showCall, hideCall } = useCallNotification();
   const { play: playRingtone, stop: stopRingtone } = useSimpleAudio();

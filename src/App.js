@@ -6,7 +6,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Main";
 import LoadingScreen from "./components/Loading";
 import { PresenceProvider } from "./context/UserStatusContext";
-import { ToastProvider, WalletProvider } from './Screen/Wallet/contexts';
 
 // Lazy pages
 const MobileOTPLogin = lazy(() => import("./Screen/Auth/MobileAuth"));
@@ -44,60 +43,56 @@ function App() {
     <AuthProvider>
       <SocketProvider>
         <PresenceProvider>
-            <ToastProvider>
-              <WalletProvider>
-              <Router>
-                <Suspense fallback={<div className="loading-screen"><LoadingScreen /></div>}>
-                  <Routes>
+          <Router>
+            <Suspense fallback={<div className="loading-screen"><LoadingScreen /></div>}>
+              <Routes>
 
-                    {/* Public Route */}
-                    <Route path="/auth/login" element={<MobileOTPLogin />} />
+                {/* Public Route */}
+                <Route path="/auth/login" element={<MobileOTPLogin />} />
 
-                    {/* Layout Wrapper */}
-                    <Route path="/" element={<Layout />}>
+                {/* Layout Wrapper */}
+                <Route path="/" element={<Layout />}>
 
-                      {/* DEFAULT PAGE = LandingPage */}
-                      <Route index element={<LandingPage />} />
+                  {/* DEFAULT PAGE = LandingPage */}
+                  <Route index element={<LandingPage />} />
 
-                      {/* HomePage moved to /home */}
-                      <Route path="home" element={<HomePage />} />
+                  {/* HomePage moved to /home */}
+                  <Route path="home" element={<HomePage />} />
 
-                      {/* Auth Protected Routes */}
-                      <Route
-                        path="dashboard"
-                        element={
-                          <ProtectedRoute>
-                            <NotFound />
-                          </ProtectedRoute>
-                        }
-                      />
+                  {/* Auth Protected Routes */}
+                  <Route
+                    path="dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <NotFound />
+                      </ProtectedRoute>
+                    }
+                  />
 
-                      <Route path="wallet" element={<Wallet />} />
-                      <Route path="feedback" element={<FeedbackForm />} />
-                      <Route path="appointment" element={<AppointmentsList />} />
-                      <Route path="provider-onboard-from" element={<ProviderOnboardingForm />} />
-                      <Route path="admin" element={<Admin />} />
-                      <Route path="services" element={<ServicePlatform />} />
-                      <Route path="share" element={<ShareComponent />} />
+                  <Route path="wallet" element={<Wallet />} />
+                  <Route path="feedback" element={<FeedbackForm />} />
+                  <Route path="appointment" element={<AppointmentsList />} />
+                  <Route path="provider-onboard-from" element={<ProviderOnboardingForm />} />
+                  <Route path="admin" element={<Admin />} />
+                  <Route path="services" element={<ServicePlatform />} />
+                  <Route path="share" element={<ShareComponent />} />
 
-                      <Route path="call/:channelName/:callType" element={<Call />} />
-                      <Route path="provider/:providerId" element={<ProviderDetailsPage />} />
-                      <Route path="service-provider-profile" element={<ServiceProviderMainPage />} />
-                      <Route path="get-services" element={<GetServices />} />
-                      {/* Keep landing just in case */}
-                      <Route path="contact-us" element={<ContactusPage />} />
-                      <Route path="data-protection" element={<DataProtectionPage />} />
-                      <Route path="terms-and-conditions" element={<TermsPage />} />
-                      <Route path="/faq" element={<FAQSection />} />
-                      <Route path="privacy-policy" element={<PrivacyPolicy />} />
-                      <Route path="landing" element={<LandingPage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Route>
-                  </Routes>
-                </Suspense>
-              </Router>
-          </WalletProvider>
-        </ToastProvider>
+                  <Route path="call/:channelName/:callType" element={<Call />} />
+                  <Route path="provider/:providerId" element={<ProviderDetailsPage />} />
+                  <Route path="service-provider-profile" element={<ServiceProviderMainPage />} />
+                  <Route path="get-services" element={<GetServices />} />
+                  {/* Keep landing just in case */}
+                  <Route path="contact-us" element={<ContactusPage />} />
+                  <Route path="data-protection" element={<DataProtectionPage />} />
+                  <Route path="terms-and-conditions" element={<TermsPage />} />
+                  <Route path="/faq" element={<FAQSection />} />
+                  <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="landing" element={<LandingPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </Router>
         </PresenceProvider>
       </SocketProvider>
     </AuthProvider>

@@ -8,10 +8,10 @@ export const CallHeader = React.memo(({ agora, ui, callType }) => {
       <div className="call-header-content">
         <div className="call-header-info">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <agora.icons.FaWifi style={{
+            {/* <agora.icons.FaWifi style={{
               color: agora.networkQuality.uplink <= 2 ? '#22c55e' :
                 agora.networkQuality.uplink <= 4 ? '#eab308' : '#ef4444'
-            }} />
+            }} /> */}
             <div>
               <h1 className="call-header-title">
                 {callType === 'video' ? 'Video Call' : 'Audio Call'}

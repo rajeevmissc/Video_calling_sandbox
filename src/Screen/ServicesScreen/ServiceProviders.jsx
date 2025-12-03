@@ -449,17 +449,19 @@ const EmptyState = memo(({ activeTabData }) => (
 
 const ProviderGrid = memo(({ providers, activeTab, mode }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {providers.map((provider, index) => (
-      <div
-        key={`${activeTab}-${provider._id}`}
-        className="opacity-0"
-        style={{
-          animation: `fadeInUp 0.4s ease-out ${0.05 * index}s both`
-        }}
-      >
-        <ProviderCard provider={provider} mode={mode} />
-      </div>
-    ))}
+    {providers
+      .filter(p => mode !== "visit" || p?.personalInfo?.gender !== "Female")   // 💥 FINAL FIX
+      .map((provider, index) => (
+        <div
+          key={`${activeTab}-${provider._id}`}
+          className="opacity-0"
+          style={{
+            animation: `fadeInUp 0.4s ease-out ${0.05 * index}s both`
+          }}
+        >
+          <ProviderCard provider={provider} mode={mode} />
+        </div>
+      ))}
   </div>
 ));
 

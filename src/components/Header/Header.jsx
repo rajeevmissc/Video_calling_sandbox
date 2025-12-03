@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Menu, X, Bell, LogOut, ChevronDown, User, Wallet, CalendarCheck } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../../hooks/useAuth';
-import { useWallet } from '../../Screen/Wallet/contexts';
+import { useWallet } from '../../Screen/Booking/hooks/useWallet';
 import { usePresence } from "../../context/UserStatusContext";
 import { useProviderId } from '../../hooks/useProviderId';
 import axios from 'axios';
@@ -59,9 +59,9 @@ const Header = () => {
   const orderId = params.get("order_id") || params.get("reference_id");
 
   if (orderId) {
-     refreshWallet();   // 🔥 force Header wallet refresh
+    fetchBalance();   // 🔥 force Header wallet refresh
   }
-}, [refreshWallet]);
+}, [fetchBalance]);
 
 
   const updateStatus = useCallback(

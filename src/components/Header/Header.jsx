@@ -61,7 +61,7 @@ const Header = () => {
   if (orderId) {
      refreshWallet();   // 🔥 force Header wallet refresh
   }
-}, [fetchBalance]);
+}, [refreshWallet]);
 
 
   const updateStatus = useCallback(

@@ -92,8 +92,8 @@ const ChatPanel = ({
 
     if (remoteUsers.length > 0) {
       return userRole === "provider"
-        ? "User online"
-        : providerName;
+        ? providerName
+        : "User online";
     }
 
     return "Offline";
@@ -276,7 +276,7 @@ const ChatPanel = ({
 
   const isOnline = remoteUsers.length > 0 && !isWaitingForProvider;
   const messageGroups = groupMessagesByDate(chatMessages);
-
+  console.log(userRole, providerName);
   return (
     <div className="h-full w-full bg-[#0a0e1a] flex flex-col relative">
 

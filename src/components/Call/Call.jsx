@@ -156,13 +156,34 @@ function Call() {
     }
   }, [isChatMode, agora.localVideoTrack, ui.showChat, callEnded]);
 
+
+  const handleInsufficientBalance = useCallback(({ reason, currentBalance, requiredAmount, totalCharged }) => {
+  console.log('💰 Call ending due to insufficient balance:', {
+    reason,
+    currentBalance,
+    requiredAmount,
+    totalCharged
+  });
+
+  // Show alert to user
+  alert(`Call ended: Insufficient balance\n\nYou need ₹${requiredAmount} for the next minute.\nCurrent balance: ₹${currentBalance}\nTotal charged: ₹${totalCharged}\n\nPlease recharge your wallet to continue.`);
+
+  // End the call
+  if (isChatMode) {
+    endChat();
+  } else {
+    endCall();
+  }
+}, [isChatMode, endChat, endCall]);
+
   // Billing logic
   const billing = useCallBilling(
     channelName,
     callType,
     agora.callDuration,
     callConnected && !callEnded && agora.connectionState === "CONNECTED" && !showReadyDelay,
-    callData
+    callData,
+    handleInsufficientBalance
   );
 
   // Navigation protections

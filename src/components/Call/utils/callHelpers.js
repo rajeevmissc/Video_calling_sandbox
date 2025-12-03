@@ -24,12 +24,12 @@ export const formatWaitingTime = (waitingTime) => {
 /**
  * Get user display information based on role
  */
-export const getUserDisplayInfo = (userRole) => {
+export const getUserDisplayInfo = (userRole, providerName) => {
   switch (userRole) {
     case 'provider':
-      return { name: 'Happiness Executive', initial: 'H' };
+      return { name: 'User', initial: 'U' };
     case 'user':
-      return { name: 'You', initial: 'Y' };
+      return { name: providerName, initial: 'P' };
     default:
       return { name: 'User', initial: 'U' };
   }

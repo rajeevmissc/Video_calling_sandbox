@@ -1,169 +1,3 @@
-// import { useState, useEffect, useRef, useCallback } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import { useSocket } from '../../context/Socketcontext';
-// import Loader from '../Loading';
-// import CallNotificationUI from './CallNotificationUI';
-// import { useCallQueue } from './hooks/useCallQueue';
-// import { useAudioManager } from './hooks/useAudioManager';
-// import { useCallActions } from './hooks/useCallActions';
-// import { useSocketHandlers } from './hooks/useSocketHandlers';
-
-// const ProviderCallAlert = ({ providerId }) => {
-//   const [isProcessing, setIsProcessing] = useState(false);
-//   const [isAccepting, setIsAccepting] = useState(false);
-//   const [dragState, setDragState] = useState({ y: 0, isDragging: false });
-
-//   const navigate = useNavigate();
-//   const { socket } = useSocket();
-
-//   // Refs
-//   const mountedRef = useRef(true);
-//   const dragStartY = useRef(0);
-//   const processingCallsRef = useRef(new Set());
-
-//   // Queue hook
-//   const { incomingCalls, addCall, removeCall, clearAllCalls, activeCall } =
-//     useCallQueue();
-
-//   // Audio hook
-//   const { playSound, stopSound, initializeAudio, cleanupAudio } =
-//     useAudioManager();
-
-//   // Call action handlers
-//   const { handleAcceptCall: acceptCall, handleDeclineCall: declineCall } =
-//     useCallActions({
-//       navigate,
-//       removeCall,
-//       setIsProcessing,
-//       setIsAccepting,
-//       processingCallsRef,
-//       stopSound,
-//     });
-
-//   // Socket event handlers
-//   const { registerSocketHandlers, unregisterSocketHandlers } =
-//     useSocketHandlers({
-//       socket,
-//       providerId,
-//       addCall,
-//       removeCall,
-//       playSound,
-//       mountedRef,
-//     });
-
-//   // 🔊 Initialize audio (only once)
-//   useEffect(() => {
-//     initializeAudio();
-//   }, [initializeAudio]);
-
-//   // 🔕 Cleanup on unmount
-//   useEffect(() => {
-//     mountedRef.current = true;
-
-//     return () => {
-//       mountedRef.current = false;
-
-//       cleanupAudio();     // ✅ Must run FIRST
-//       stopSound();        // 🔇 Stop all audio
-//       clearAllCalls();    // 🧹 Reset calls
-
-//       console.log("❌ ProviderCallAlert unmounted → Audio + Calls cleaned");
-//     };
-//   }, [cleanupAudio, stopSound, clearAllCalls]);
-
-//   // 🔔 Request notification permission once
-//   useEffect(() => {
-//     if (typeof Notification !== "undefined" && Notification.permission === "default") {
-//       Notification.requestPermission().catch(() => {});
-//     }
-//   }, []);
-
-//   // 🔌 Socket setup
-//   useEffect(() => {
-//     if (!socket || !providerId) return;
-
-//     registerSocketHandlers();
-
-//     return () => {
-//       unregisterSocketHandlers();
-//     };
-//   }, [socket, providerId, registerSocketHandlers, unregisterSocketHandlers]);
-
-//   // 👉 Drag Handlers
-//   const handleDragStart = useCallback((e) => {
-//     if (e.touches?.length > 0) {
-//       dragStartY.current = e.touches[0].clientY;
-//       setDragState({ y: 0, isDragging: true });
-//     }
-//   }, []);
-
-//   const handleDragMove = useCallback(
-//     (e) => {
-//       if (!dragState.isDragging || !e.touches?.length) return;
-
-//       const deltaY = e.touches[0].clientY - dragStartY.current;
-//       if (deltaY > 0) setDragState({ y: deltaY, isDragging: true });
-//     },
-//     [dragState.isDragging]
-//   );
-
-//   const handleDragEnd = useCallback(() => {
-//     if (dragState.y > 150 && activeCall && !isProcessing) {
-//       declineCall(activeCall);
-//     }
-//     setDragState({ y: 0, isDragging: false });
-//   }, [dragState.y, activeCall, declineCall, isProcessing]);
-
-//   // Accept Call wrapper
-//   const handleAcceptCall = useCallback(
-//     (call) => {
-//       if (!call || isProcessing) return;
-//       acceptCall(call);
-//     },
-//     [acceptCall, isProcessing]
-//   );
-
-//   // Decline Call wrapper
-//   const handleDeclineCall = useCallback(
-//     (call) => {
-//       if (!call || isProcessing) return;
-//       declineCall(call);
-//     },
-//     [declineCall, isProcessing]
-//   );
-
-//   // Show Loader when processing
-//   if (isAccepting) return <Loader />;
-
-//   // Hide UI but keep component mounted
-//   if (incomingCalls.length === 0) return null;
-
-//   return (
-//     <CallNotificationUI
-//       activeCall={activeCall}
-//       incomingCalls={incomingCalls}
-//       dragState={dragState}
-//       isProcessing={isProcessing}
-//       onAccept={handleAcceptCall}
-//       onDecline={handleDeclineCall}
-//       onDragStart={handleDragStart}
-//       onDragMove={handleDragMove}
-//       onDragEnd={handleDragEnd}
-//     />
-//   );
-// };
-
-// export default ProviderCallAlert;
-
-
-
-
-
-
-
-
-
-
 // components/ProviderCallAlert/ProviderCallAlert.jsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -173,16 +7,10 @@ import Loader from '../Loading';
 import CallNotificationUI from './CallNotificationUI';
 import { useCallNotification } from './hooks/useCallNotification';
 import { useSimpleAudio } from './hooks/useSimpleAudio';
-
+import { useProviderById } from "../hooks/useProviderById";
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
 
-/**
- * ProviderCallAlert - WhatsApp/Truecaller style call notifications
- * - Shows ONE call at a time (no queue)
- * - Only requested provider sees the call
- * - Call disappears when declined/cancelled/expired
- * - Proper busy state handling
- */
+
 const ProviderCallAlert = ({ providerId }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -198,7 +26,7 @@ const ProviderCallAlert = ({ providerId }) => {
   // Custom hooks
   const { currentCall, showCall, hideCall } = useCallNotification();
   const { play: playRingtone, stop: stopRingtone } = useSimpleAudio();
-
+  const { provider} = useProviderById(providerId);
   // Get auth token
   const getAuthToken = useCallback(() => {
     const token = localStorage.getItem('token');
@@ -251,6 +79,7 @@ const ProviderCallAlert = ({ providerId }) => {
               participantName: currentCall.callerName,
               userRole: 'provider',
               callId: currentCall.callId,
+              providerData: provider?.personalInfo,
             },
           },
           replace: true,

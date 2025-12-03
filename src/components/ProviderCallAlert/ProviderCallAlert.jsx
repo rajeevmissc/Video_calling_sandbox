@@ -15,18 +15,17 @@ const ProviderCallAlert = ({ providerId }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [dragState, setDragState] = useState({ y: 0, isDragging: false });
-
+ const { provider} = useProviderById(providerId);
   const navigate = useNavigate();
   const { socket } = useSocket();
   
   const mountedRef = useRef(true);
   const dragStartY = useRef(0);
   const processingRef = useRef(false);
-
+  console.log("provider..................", provider);
   // Custom hooks
   const { currentCall, showCall, hideCall } = useCallNotification();
   const { play: playRingtone, stop: stopRingtone } = useSimpleAudio();
-  const { provider} = useProviderById(providerId);
   // Get auth token
   const getAuthToken = useCallback(() => {
     const token = localStorage.getItem('token');

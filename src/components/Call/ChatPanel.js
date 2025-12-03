@@ -30,6 +30,7 @@ const ChatPanel = ({
   isWaitingForProvider = false,
   isRemoteTyping = false,
   onTypingChange,
+  providerName
 }) => {
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -92,7 +93,7 @@ const ChatPanel = ({
     if (remoteUsers.length > 0) {
       return userRole === "provider"
         ? "User online"
-        : "Happiness Care Executive online";
+        : providerName;
     }
 
     return "Offline";
@@ -320,50 +321,50 @@ const ChatPanel = ({
           </div>
 
 
-        <div className="flex items-center gap-2">
-  {/* Timer only on mobile */}
-  {isMobile && typeof callDuration !== 'undefined' && (
-    <div className="hidden sm:hidden flex items-center mr-2 text-xs text-gray-300 px-2 py-1 rounded-md bg-gray-800/40">
-      <span className="mr-1">⏱</span>
-      <span>{formatTimer(callDuration)}</span>
-    </div>
-  )}
+          <div className="flex items-center gap-2">
+            {/* Timer only on mobile */}
+            {isMobile && typeof callDuration !== 'undefined' && (
+              <div className="hidden sm:hidden flex items-center mr-2 text-xs text-gray-300 px-2 py-1 rounded-md bg-gray-800/40">
+                <span className="mr-1">⏱</span>
+                <span>{formatTimer(callDuration)}</span>
+              </div>
+            )}
 
-  <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
-    <BsThreeDotsVertical className="text-lg" />
-  </button>
+            <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
+              <BsThreeDotsVertical className="text-lg" />
+            </button>
 
-  {/* ============================
+            {/* ============================
        MOBILE: Show "End Chat"
        DESKTOP: Show X icon
      ============================ */}
-  {isMobile ? (
-    <button
-      onClick={() => {
-        if (typeof onEndChat === "function") {
-          console.log("Mobile end-chat triggered");
-          onEndChat();
-        }
-      }}
-      className="text-red-400 hover:text-white px-3 py-1 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium"
-    >
-      End Chat
-    </button>
-  ) : (
-    <button
-      onClick={() => {
-        if (typeof onClose === "function") {
-          console.log("Desktop close triggered");
-          onClose();
-        }
-      }}
-      className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors"
-      title="Close"
-    >
-      <FaTimes className="text-lg" />
-    </button>
-  )}
-</div>
+            {isMobile ? (
+              <button
+                onClick={() => {
+                  if (typeof onEndChat === "function") {
+                    console.log("Mobile end-chat triggered");
+                    onEndChat();
+                  }
+                }}
+                className="text-red-400 hover:text-white px-3 py-1 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium"
+              >
+                End Chat
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  if (typeof onClose === "function") {
+                    console.log("Desktop close triggered");
+                    onClose();
+                  }
+                }}
+                className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors"
+                title="Close"
+              >
+                <FaTimes className="text-lg" />
+              </button>
+            )}
+          </div>
 
 
         </div>

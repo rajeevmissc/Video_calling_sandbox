@@ -4,7 +4,7 @@ import { Video, Phone, PhoneOff, User, MessageCircle } from 'lucide-react';
 import axios from 'axios';
 import { useSocket } from '../context/Socketcontext';
 import Loader from '../components/Loading';
-
+import { useProviderById } from "../hooks/useProviderById";
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
 
 const ProviderCallAlert = ({ providerId }) => {
@@ -32,6 +32,11 @@ const ProviderCallAlert = ({ providerId }) => {
     }),
     []
   );
+
+
+  const { provider, loading, error } = useProviderById(providerId);
+  if (loading) return null; 
+  if (error) return null;
 
   // Initialize audio ONCE
   useEffect(() => {
@@ -385,6 +390,7 @@ const ProviderCallAlert = ({ providerId }) => {
                 participantName: call.callerName,
                 userRole: 'provider',
                 callId: call.callId,
+                providerData: provider?.personalInfo,
               },
             },
             replace: true,

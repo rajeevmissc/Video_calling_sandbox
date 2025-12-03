@@ -1,4 +1,15 @@
+import { Phone } from 'lucide-react';
 import { API_BASE_URL, CASHFREE_MODE } from './constants';
+
+
+const userData = useMemo(() => {
+  try {
+    return JSON.parse(localStorage.getItem('userData') || '{}');
+  } catch (error) {
+    console.error('Error parsing userData:', error);
+    return {};
+  }
+}, []);
 
 // ==================== CASHFREE MANAGER ====================
 class CashfreeManager {
@@ -112,7 +123,8 @@ class WalletAPI {
         amount: amount * 100, // Convert to smallest currency unit
         currency: 'INR',
         payment_method_types: paymentMethods,
-        metadata: { type: 'wallet_recharge' }
+        metadata: { type: 'wallet_recharge' },
+        userData: userData
       }),
     });
   }

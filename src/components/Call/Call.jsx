@@ -467,6 +467,7 @@ useEffect(() => {
           isRemoteTyping={isRemoteTyping}
           onTypingChange={handleTypingChange}
           onEndChat={endChat}
+          providerName={callData.providerData?.fullName}
         />
       </div>
 

@@ -2,14 +2,7 @@ import React from 'react';
 import WalletApp from './WalletApp';
 import { ToastProvider, WalletProvider } from './contexts';
 import { Helmet } from 'react-helmet-async';
-/**
- * Main Wallet Component with Providers
- * This is the entry point for the wallet feature
- * 
- * Usage:
- * import Wallet from './wallet/Wallet';
- * <Wallet />
- */
+
 const Wallet = () => {
   return (
     <>

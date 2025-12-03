@@ -28,6 +28,6 @@ export const useProviderById = (providerId) => {
     fetchData();
     return () => { isMounted = false };
   }, [providerId]);
-
+  console.log('provider ......................', provider);
   return { provider, loading, error };
 };

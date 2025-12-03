@@ -294,7 +294,6 @@ export const useCallBilling = (
   const hasTriggeredCallEndRef = useRef(false);
   const hasShownLowBalanceWarningRef = useRef(false);
 
-  // ✅ Check if callData is ready
   const isCallDataReady = !!(
     callData && 
     callData.providerId && 
@@ -308,14 +307,12 @@ export const useCallBilling = (
     return role === 'user';
   }, [isCallDataReady, callData?.userRole]);
 
-  // ✅ FIXED: Only use actual provider rate (no defaults)
   const getCallRate = useCallback(() => {
     if (!isCallDataReady) {
       console.warn('⚠️ Call data not ready, rate unavailable');
       return 0;
     }
     
-    // Get the rate for the current callType
     const rateForCallType = callData.providerRate?.[callType]?.basePrice;
     
     if (rateForCallType && !isNaN(Number(rateForCallType)) && Number(rateForCallType) > 0) {
@@ -324,7 +321,6 @@ export const useCallBilling = (
       return rate;
     }
     
-    // ✅ If rate not found, log error and return 0 (don't charge)
     console.error(`❌ No valid rate found for ${callType}. Provider rates:`, callData.providerRate);
     return 0;
   }, [isCallDataReady, callData?.providerRate, callType]);
@@ -334,7 +330,6 @@ export const useCallBilling = (
     return map[callType] || 'call';
   }, [callType]);
 
-  // ✅ Buffer = 2 minutes worth of balance
   const getRequiredBuffer = useCallback(() => {
     const rate = getCallRate();
     return rate * 2;
@@ -356,22 +351,20 @@ export const useCallBilling = (
     };
   }, [billingState.isBillingApplicable, getRequiredBuffer, wallet.balance, isCallDataReady]);
 
-  // ✅ Check if balance is sufficient for next minute (prepaid check)
   const hasBalanceForNextMinute = useCallback(() => {
     if (!billingState.isBillingApplicable || !isCallDataReady) {
       return true;
     }
 
     const rate = getCallRate();
-    if (rate === 0) return true; // If no rate, don't block
+    if (rate === 0) return true;
     
     const hasEnough = wallet.balance >= rate;
-    console.log(`💰 Balance check: ₹${wallet.balance.toFixed(2)} >= ₹${rate.toFixed(2)} (rate) = ${hasEnough}`);
+    console.log(`💰 Balance check: ₹${wallet.balance.toFixed(2)} >= ₹${rate.toFixed(2)} = ${hasEnough}`);
     
     return hasEnough;
   }, [billingState.isBillingApplicable, isCallDataReady, getCallRate, wallet.balance]);
 
-  // ✅ Charge for minutes
   const chargeForMinutes = useCallback(
     async (minutesToBill, label = '') => {
       if (!isCallDataReady || !billingState.isBillingApplicable || wallet.loading || billingState.isCharging)
@@ -389,7 +382,6 @@ export const useCallBilling = (
         const amountToCharge = minutesToBill * rate;
 
         if (amountToCharge > 0) {
-          // ✅ Check if balance is sufficient
           if (wallet.balance < amountToCharge) {
             console.warn(`⚠️ Insufficient balance: Need ₹${amountToCharge.toFixed(2)}, Have ₹${wallet.balance.toFixed(2)}`);
             setBillingState(prev => ({ ...prev, isCharging: false }));
@@ -447,7 +439,6 @@ export const useCallBilling = (
     ]
   );
 
-  // Initialize billing
   useEffect(() => {
     if (!isCallDataReady) return;
     const applicable = shouldApplyBilling();
@@ -458,7 +449,6 @@ export const useCallBilling = (
     }));
   }, [shouldApplyBilling, callData?.userRole, isCallDataReady]);
 
-  // ✅ PREPAID: Initial charge (first minute upfront - like phone calls)
   useEffect(() => {
     if (!isCallDataReady || !isCallActive || !billingState.isBillingApplicable || billingState.hasInitialCharge)
       return;
@@ -480,7 +470,6 @@ export const useCallBilling = (
         }));
         console.log('✅ Initial minute charged successfully');
       } else if (result.reason === 'insufficient_balance') {
-        // ✅ End call immediately if can't afford first minute
         console.error('❌ Cannot afford first minute - ending call');
         
         hasTriggeredCallEndRef.current = true;
@@ -503,7 +492,6 @@ export const useCallBilling = (
     });
   }, [isCallActive, billingState.isBillingApplicable, billingState.hasInitialCharge, chargeForMinutes, isCallDataReady, getCallRate, wallet.balance, onInsufficientBalance]);
 
-  // ✅ PREPAID: Check balance before each new minute starts
   useEffect(() => {
     if (
       !isCallActive ||
@@ -516,8 +504,6 @@ export const useCallBilling = (
     }
 
     const currentMinute = Math.floor(callDuration / 60);
-    
-    // ✅ At 50 seconds of each minute, check if we have balance for next minute
     const secondsIntoMinute = callDuration % 60;
     
     if (secondsIntoMinute >= 50 && currentMinute === billingState.lastBilledMinute) {
@@ -562,7 +548,6 @@ export const useCallBilling = (
     onInsufficientBalance
   ]);
 
-  // ✅ PREPAID: Charge for next minute when current minute completes
   const chargeForNextMinute = useCallback(async () => {
     if (
       !isCallActive ||
@@ -577,7 +562,6 @@ export const useCallBilling = (
     const currentMinute = Math.floor(callDuration / 60);
     const nextMinute = billingState.lastBilledMinute + 1;
 
-    // ✅ When we cross into a new minute, charge for it
     if (currentMinute >= nextMinute) {
       console.log(`💰 Minute ${nextMinute} started - charging now (prepaid)`);
 
@@ -590,7 +574,6 @@ export const useCallBilling = (
         }));
         console.log(`✅ Charged for minute ${nextMinute}`);
       } else if (result.reason === 'insufficient_balance') {
-        // This shouldn't happen if balance check worked, but safety net
         console.error('❌ Unexpected: Cannot charge for minute - ending call');
         
         hasTriggeredCallEndRef.current = true;
@@ -628,13 +611,11 @@ export const useCallBilling = (
     onInsufficientBalance
   ]);
 
-  // Trigger charging on minute changes
   useEffect(() => {
     if (!isCallDataReady || !isCallActive || !billingState.isBillingApplicable) return;
     chargeForNextMinute();
   }, [callDuration, isCallActive, billingState.isBillingApplicable, chargeForNextMinute, isCallDataReady]);
 
-  // ✅ Balance monitor - for warnings only (not for ending call)
   const monitorBalance = useCallback(async () => {
     if (
       !isCallDataReady || 
@@ -649,7 +630,6 @@ export const useCallBilling = (
     
     const remainingMinutes = Math.floor(wallet.balance / rate);
     
-    // ✅ Show warning when less than 2 minutes remaining
     if (remainingMinutes < 2 && remainingMinutes >= 1) {
       console.warn(`⚠️ Low balance warning: Only ${remainingMinutes} minute(s) remaining`);
       hasShownLowBalanceWarningRef.current = true;
@@ -675,7 +655,6 @@ export const useCallBilling = (
     return () => clearInterval(interval);
   }, [isCallActive, billingState.isBillingApplicable, monitorBalance, isCallDataReady]);
 
-  // Reset billing state when call ends
   useEffect(() => {
     if (!isCallActive) {
       setBillingState(prev => ({

@@ -30,7 +30,8 @@ const ChatPanel = ({
   isWaitingForProvider = false,
   isRemoteTyping = false,
   onTypingChange,
-  providerName
+  providerName,
+  callType
 }) => {
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -339,17 +340,33 @@ const ChatPanel = ({
        DESKTOP: Show X icon
      ============================ */}
             {isMobile ? (
-              <button
-                onClick={() => {
-                  if (typeof onEndChat === "function") {
-                    console.log("Mobile end-chat triggered");
-                    onEndChat();
-                  }
-                }}
-                className="text-red-400 hover:text-white px-3 py-1 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium"
-              >
-                End Chat
-              </button>
+              callType === "chat" ? (
+                // 👉 Mobile + Chat = Show "End Chat" button
+                <button
+                  onClick={() => {
+                    if (typeof onEndChat === "function") {
+                      console.log("Mobile end-chat triggered");
+                      onEndChat();
+                    }
+                  }}
+                  className="text-red-400 hover:text-white px-3 py-1 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium"
+                >
+                  End Chat
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    if (typeof onClose === "function") {
+                      console.log("Mobile close triggered");
+                      onClose();
+                    }
+                  }}
+                  className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors"
+                  title="Close"
+                >
+                  <FaTimes className="text-lg" />
+                </button>
+              )
             ) : (
               <button
                 onClick={() => {
@@ -364,6 +381,7 @@ const ChatPanel = ({
                 <FaTimes className="text-lg" />
               </button>
             )}
+
           </div>
 
 

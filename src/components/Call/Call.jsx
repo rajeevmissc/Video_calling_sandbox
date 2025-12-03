@@ -411,7 +411,6 @@ useEffect(() => {
 
   const containerClass = isChatMode ? "call-container call-mode-chat" : "call-container";
   const displayInfo = getUserDisplayInfo(callData?.userRole, callData.providerName);
-  console.log('......................................................', callData)
   return (
     <div className={containerClass}>
       <LoadingScreen
@@ -471,6 +470,7 @@ useEffect(() => {
           onTypingChange={handleTypingChange}
           onEndChat={endChat}
           providerName={callData.providerName}
+          callType={callType}
         />
       </div>
 

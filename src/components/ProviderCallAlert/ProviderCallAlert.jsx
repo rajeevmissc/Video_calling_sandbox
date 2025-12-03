@@ -7,7 +7,7 @@ import Loader from '../Loading';
 import CallNotificationUI from './CallNotificationUI';
 import { useCallNotification } from './hooks/useCallNotification';
 import { useSimpleAudio } from './hooks/useSimpleAudio';
-import { useProviderById } from "../hooks/useProviderById";
+import { useProviderById } from "../../hooks/useProviderById";
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
 
 

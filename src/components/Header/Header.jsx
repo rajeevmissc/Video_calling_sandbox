@@ -29,7 +29,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const isLoggedIn = isAuthenticated;
-  const { balance, loading, refreshWallet  } = useWallet();
+  const { balance, loading, fetchBalance  } = useWallet();
   const providerId = useProviderId();
 
   // Initial status based on presenceMap (fallback to offline)

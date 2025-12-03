@@ -29,7 +29,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const isLoggedIn = isAuthenticated;
-  const { balance, loading, fetchBalance } = useWallet();
+  const { balance, loading, refreshWallet  } = useWallet();
   const providerId = useProviderId();
 
   // Initial status based on presenceMap (fallback to offline)
@@ -59,7 +59,7 @@ const Header = () => {
   const orderId = params.get("order_id") || params.get("reference_id");
 
   if (orderId) {
-    fetchBalance();   // 🔥 force Header wallet refresh
+     refreshWallet();   // 🔥 force Header wallet refresh
   }
 }, [fetchBalance]);
 

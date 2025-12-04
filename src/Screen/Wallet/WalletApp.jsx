@@ -23,54 +23,60 @@ export const PaymentSuccessPage = memo(({ onReturnToWallet }) => {
   
   const { fetchBalance: refreshHeaderWallet } = useGlobalWallet();
 
-  useEffect(() => {
-    const processPayment = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const orderId = urlParams.get('order_id');
+ useEffect(() => {
+  const processPayment = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('order_id');
 
-      if (!orderId) {
-        setError('No order ID found');
-        setIsProcessing(false);
-        return;
+    if (!orderId) {
+      setError('No order ID found');
+      setIsProcessing(false);
+      return;
+    }
+
+    try {
+      const response = await walletAPI.verifyPaymentSession(orderId);
+
+      if (response.success) {
+        // Extract breakdown from response
+        const totalWalletCredit = response.data.totalWalletCredit || response.data.amount;
+        const baseAmount = response.data.baseAmount || response.data.amount;
+        const bonusAmount = response.data.bonusAmount || 0;
+        
+        // Credit the wallet with total amount (base + bonus)
+        await walletAPI.rechargeWallet(totalWalletCredit, orderId);
+        await refreshWallet();
+        await refreshHeaderWallet();
+        
+        // Store detailed payment info
+        setPaymentDetails({ 
+          amount: totalWalletCredit,
+          baseAmount: baseAmount,
+          bonusAmount: bonusAmount,
+          orderId, 
+          status: 'success' 
+        });
+        
+        showSuccess(`₹${totalWalletCredit} added to your wallet!`);
+        
+        // ✅ CRITICAL: Clean URL to prevent re-processing on refresh
+        window.history.replaceState({}, '', '/wallet');
+      } else {
+        throw new Error('Payment verification failed');
       }
+    } catch (err) {
+      console.error('Payment processing error:', err);
+      setError(err.message || 'Failed to process payment');
+      
+      // ✅ ALSO: Clean URL even on error to prevent retry loops
+      window.history.replaceState({}, '', '/wallet');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-      try {
-        const response = await walletAPI.verifyPaymentSession(orderId);
-
-        if (response.success) {
-          // 🔥 NEW: Extract breakdown from response
-          const totalWalletCredit = response.data.totalWalletCredit || response.data.amount;
-          const baseAmount = response.data.baseAmount || response.data.amount;
-          const bonusAmount = response.data.bonusAmount || 0;
-          
-          // Credit the wallet with total amount (base + bonus)
-          await walletAPI.rechargeWallet(totalWalletCredit, orderId);
-          await refreshWallet();
-          await refreshHeaderWallet();
-          
-          // 🔥 NEW: Store detailed payment info
-          setPaymentDetails({ 
-            amount: totalWalletCredit,
-            baseAmount: baseAmount,
-            bonusAmount: bonusAmount,
-            orderId, 
-            status: 'success' 
-          });
-          
-          showSuccess(`₹${totalWalletCredit} added to your wallet!`);
-        } else {
-          throw new Error('Payment verification failed');
-        }
-      } catch (err) {
-        console.error('Payment processing error:', err);
-        setError(err.message || 'Failed to process payment');
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    processPayment();
-  }, [refreshWallet, showSuccess, refreshHeaderWallet]);
+  processPayment();
+}, [refreshWallet, showSuccess, refreshHeaderWallet]);
 
   if (isProcessing) {
     return (

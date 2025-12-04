@@ -81,7 +81,7 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { name: "Facebook", icon: Facebook, href: "#", color: "hover:text-blue-500" },
+    { name: "Facebook", icon: Facebook, href: "https://www.facebook.com/GetCompani0n", color: "hover:text-blue-500" },
     { name: "Instagram", icon: Instagram, href: "https://share.google/eRqYno2YYjNEXqcRK", color: "hover:text-pink-500" },
     { name: "LinkedIn", icon: Linkedin, href: "#", color: "hover:text-blue-600" },
     { name: "YouTube", icon: Youtube, href: "#", color: "hover:text-red-500" }
